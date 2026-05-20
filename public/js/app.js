@@ -240,4 +240,66 @@ function callFemale() {
 function showToast(message, type) {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    toast
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#ffc107'};
+        color: white;
+        border-radius: 8px;
+        z-index: 1000;
+        animation: slideIn 0.3s ease;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// Socket events - Listen ONLY for female detections
+socket.on('female-detected', (data) => {
+    console.log('👩 Female detected:', data);
+    updateFemaleDevices(data);
+    showToast(`👩 ${data.ownerName} amegunduliwa umbali wa ${data.distance.toFixed(1)}m!`, 'success');
+});
+
+socket.on('unknown-device', (data) => {
+    console.log('Unknown device (not female):', data);
+    showToast(`⚠️ Kifaa kimegunduliwa lakini si mwanamke: ${data.deviceName}`, 'warning');
+});
+
+socket.on('sms-result', (data) => {
+    if (data.success) {
+        commsResult.innerHTML = `✅ SMS imetumwa kwa mwanamke! ${data.message}`;
+        commsResult.className = 'comms-result success';
+    } else {
+        commsResult.innerHTML = `❌ Kosa: ${data.error}`;
+        commsResult.className = 'comms-result error';
+    }
+});
+
+socket.on('call-result', (data) => {
+    if (data.success) {
+        commsResult.innerHTML = `✅ Simu inampigia mwanamke! ${data.message}`;
+        commsResult.className = 'comms-result success';
+    } else {
+        commsResult.innerHTML = `❌ Kosa: ${data.error}`;
+        commsResult.className = 'comms-result error';
+    }
+});
+
+// Event listeners
+startScanBtn.addEventListener('click', startScanning);
+stopScanBtn.addEventListener('click', stopScanning);
+showDbBtn.addEventListener('click', () => {
+    const isVisible = deviceDatabaseDiv.style.display === 'block';
+    deviceDatabaseDiv.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible) loadFemaleDatabase();
+});
+addDeviceBtn.addEventListener('click', addFemale);
+sendSmsBtn.addEventListener('click', sendSMSToFemale);
+makeCallBtn.addEventListener('click', callFemale);
+
+// Initialize
+initScanner();
+console.log('✅ Female Phone Tracker Ready - Tracking only women within 10 meters');
