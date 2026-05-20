@@ -2,387 +2,923 @@
 <html lang="sw">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Female Phone Tracker - Test Version</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Female Chat System - Real Time Chat & Calls</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-            min-height: 100vh;
+            height: 100vh;
+            overflow: hidden;
         }
-        .container {
-            max-width: 600px;
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            max-width: 1400px;
             margin: 0 auto;
-        }
-        .card {
             background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
         }
-        h1 {
-            color: white;
-            text-align: center;
-            margin-bottom: 20px;
+
+        /* Sidebar - Users List */
+        .sidebar {
+            width: 320px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
         }
-        h2 {
+
+        .sidebar-header {
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .sidebar-header h2 {
             color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
         }
-        input, textarea, select {
-            width: 100%;
-            padding: 12px;
+
+        .current-user {
+            padding: 15px 20px;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .current-user .avatar {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .users-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .user-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .user-item:hover {
+            background: #e9ecef;
+        }
+
+        .user-item.active {
+            background: #e3f2fd;
+            border-left: 4px solid #667eea;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            background: #e9ecef;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .online-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #28a745;
+        }
+
+        .online-status.offline {
+            background: #6c757d;
+        }
+
+        .last-seen {
+            font-size: 11px;
+            color: #6c757d;
+        }
+
+        .unread-badge {
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 15px 20px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .call-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .call-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .call-btn.audio {
+            background: #28a745;
+            color: white;
+        }
+
+        .call-btn.video {
+            background: #17a2b8;
+            color: white;
+        }
+
+        /* Messages Area */
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
             margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            display: flex;
+        }
+
+        .message.sent {
+            justify-content: flex-end;
+        }
+
+        .message.received {
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            position: relative;
+        }
+
+        .message.sent .message-bubble {
+            background: #667eea;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.received .message-bubble {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .message-text {
+            word-wrap: break-word;
+        }
+
+        .message-time {
+            font-size: 10px;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+
+        .message-status {
+            font-size: 10px;
+            margin-left: 5px;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            padding: 10px 20px;
+            font-size: 12px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        /* Message Input */
+        .message-input-area {
+            padding: 15px 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #e9ecef;
+            border-radius: 25px;
+            outline: none;
             font-size: 14px;
         }
-        button {
-            width: 100%;
-            padding: 12px;
+
+        .message-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            width: 45px;
+            height: 45px;
             background: #667eea;
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+            border-radius: 50%;
             cursor: pointer;
-            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
         }
-        button:hover {
-            background: #5a67d8;
-        }
-        .btn-sms {
-            background: #17a2b8;
-        }
-        .btn-call {
-            background: #28a745;
-        }
-        .btn-danger {
-            background: #dc3545;
-        }
-        .result {
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 8px;
+
+        /* Call Modal */
+        .call-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
             display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
         }
-        .result.success {
-            display: block;
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+
+        .call-modal.active {
+            display: flex;
         }
-        .result.error {
-            display: block;
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+
+        .call-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            min-width: 300px;
         }
-        .result.info {
-            display: block;
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+
+        .local-video, .remote-video {
+            width: 200px;
+            height: 150px;
+            background: #333;
+            border-radius: 10px;
+            margin: 10px auto;
         }
-        .status {
-            background: #e8f4f8;
-            padding: 10px;
+
+        .call-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: #28a745;
+            color: white;
             border-radius: 8px;
-            margin-bottom: 15px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* No chat selected */
+        .no-chat {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
             text-align: center;
         }
-        .online {
-            color: #28a745;
-            font-weight: bold;
-        }
-        .offline {
-            color: #dc3545;
-            font-weight: bold;
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 80px;
+            }
+            .user-name, .last-seen {
+                display: none;
+            }
+            .sidebar-header h2 {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>👩 Female Phone Tracker</h1>
-        
-        <div class="card">
-            <h2>📡 Server Status</h2>
-            <div class="status" id="serverStatus">
-                Inaangalia server...
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>💬 Female Chat</h2>
             </div>
+            <div class="current-user" id="currentUser">
+                <div class="avatar">👨</div>
+                <div>Tracker User</div>
+            </div>
+            <div class="users-list" id="usersList"></div>
         </div>
 
-        <div class="card">
-            <h2>📨 Tuma SMS kwa Mwanamke</h2>
-            <input type="tel" id="phoneNumber" placeholder="Namba ya Simu (+255...)" value="+255712345678">
-            <input type="text" id="ownerName" placeholder="Jina la Mwanamke" value="Fatma">
-            <textarea id="message" rows="4" placeholder="Andika ujumbe wako hapa...">Habari Fatma, nimekugundua kupitia tracker yetu. Uko karibu nami ndani ya mita 10. Tungependa kuwasiliana nawe.</textarea>
-            <button id="sendSmsBtn" class="btn-sms">📨 TUMA SMS</button>
-            <button id="makeCallBtn" class="btn-call">📞 PIGA SIMU</button>
-            <div id="result" class="result"></div>
-        </div>
-
-        <div class="card">
-            <h2>👩 Wanawake Waliopo Kwenye Database</h2>
-            <button id="loadFemalesBtn">📋 ORODHA YA WANAWAKE</button>
-            <div id="femalesList" style="margin-top: 15px;"></div>
-        </div>
-
-        <div class="card">
-            <h2>➕ Ongeza Mwanamke Mpya</h2>
-            <input type="text" id="newDeviceId" placeholder="Device ID (kwa mfano: FATMA-001)">
-            <input type="text" id="newDeviceName" placeholder="Jina la Kifaa">
-            <input type="tel" id="newPhoneNumber" placeholder="Namba ya Simu">
-            <input type="text" id="newOwnerName" placeholder="Jina Kamili">
-            <button id="addFemaleBtn" style="background: #28a745;">➕ Ongeza Mwanamke</button>
-        </div>
-
-        <div class="card">
-            <h2>🔍 Test Gender Detection</h2>
-            <input type="text" id="testName" placeholder="Ingiza jina (kwa mfano: Fatma)">
-            <button id="testGenderBtn">🔍 GUNDUA JINSIA</button>
-            <div id="genderResult" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;"></div>
+        <!-- Chat Area -->
+        <div class="chat-area">
+            <div class="chat-header" id="chatHeader" style="display: none;">
+                <div class="chat-user-info">
+                    <div class="user-avatar" id="chatAvatar">👩</div>
+                    <div>
+                        <div class="user-name" id="chatUserName"></div>
+                        <div class="last-seen" id="chatUserStatus"></div>
+                    </div>
+                </div>
+                <div class="call-buttons">
+                    <button class="call-btn audio" id="audioCallBtn">📞 Audio</button>
+                    <button class="call-btn video" id="videoCallBtn">🎥 Video</button>
+                </div>
+            </div>
+            <div class="messages-area" id="messagesArea">
+                <div class="no-chat">
+                    <div>
+                        <h3>💬 Karibu kwenye Female Chat</h3>
+                        <p>Chagua mwanamke kutoka upande wa kushoto kuanza mazungumzo</p>
+                    </div>
+                </div>
+            </div>
+            <div class="typing-indicator" id="typingIndicator" style="display: none;"></div>
+            <div class="message-input-area" id="messageInputArea" style="display: none;">
+                <input type="text" class="message-input" id="messageInput" placeholder="Andika ujumbe wako...">
+                <button class="send-btn" id="sendBtn">📤</button>
+            </div>
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- Call Modal -->
+    <div class="call-modal" id="callModal">
+        <div class="call-container">
+            <h3 id="callerName">Incoming Call...</h3>
+            <video id="localVideo" class="local-video" autoplay muted style="display: none;"></video>
+            <video id="remoteVideo" class="remote-video" autoplay style="display: none;"></video>
+            <div class="call-controls">
+                <button id="acceptCallBtn" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 8px;">✅ Accept</button>
+                <button id="rejectCallBtn" style="background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 8px;">❌ Reject</button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="notificationSound" src="data:audio/wav;base64,U3RlYWx0aCBzb3VuZCBub3RpZmljYXRpb24gYmVlcCBiZWVw"></audio>
+
+    <script src="/socket.io/socket.js"></script>
     <script>
+        // ==================== CONFIGURATION ====================
         const socket = io();
+        const CURRENT_USER_ID = "CURRENT-USER";
+        const CURRENT_USER_NAME = "Tracker User";
+        
+        let currentChatUser = null;
+        let messages = [];
+        let users = [];
+        let typingTimeout = null;
+        let peerConnection = null;
+        let localStream = null;
+        let currentCall = null;
         
         // DOM elements
-        const serverStatus = document.getElementById('serverStatus');
-        const phoneNumber = document.getElementById('phoneNumber');
-        const ownerName = document.getElementById('ownerName');
-        const message = document.getElementById('message');
-        const sendSmsBtn = document.getElementById('sendSmsBtn');
-        const makeCallBtn = document.getElementById('makeCallBtn');
-        const resultDiv = document.getElementById('result');
-        const loadFemalesBtn = document.getElementById('loadFemalesBtn');
-        const femalesList = document.getElementById('femalesList');
-        const addFemaleBtn = document.getElementById('addFemaleBtn');
-        const testGenderBtn = document.getElementById('testGenderBtn');
-        const testName = document.getElementById('testName');
-        const genderResult = document.getElementById('genderResult');
+        const usersList = document.getElementById('usersList');
+        const messagesArea = document.getElementById('messagesArea');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const chatHeader = document.getElementById('chatHeader');
+        const messageInputArea = document.getElementById('messageInputArea');
+        const chatUserName = document.getElementById('chatUserName');
+        const chatUserStatus = document.getElementById('chatUserStatus');
+        const chatAvatar = document.getElementById('chatAvatar');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const audioCallBtn = document.getElementById('audioCallBtn');
+        const videoCallBtn = document.getElementById('videoCallBtn');
+        const callModal = document.getElementById('callModal');
+        const acceptCallBtn = document.getElementById('acceptCallBtn');
+        const rejectCallBtn = document.getElementById('rejectCallBtn');
+        const callerNameSpan = document.getElementById('callerName');
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
         
-        // New female inputs
-        const newDeviceId = document.getElementById('newDeviceId');
-        const newDeviceName = document.getElementById('newDeviceName');
-        const newPhoneNumber = document.getElementById('newPhoneNumber');
-        const newOwnerName = document.getElementById('newOwnerName');
+        // ==================== UTILITY FUNCTIONS ====================
         
-        // Check server status
-        async function checkServer() {
-            try {
-                const response = await fetch('/health');
-                const data = await response.json();
-                if (data.status === 'ok') {
-                    serverStatus.innerHTML = '✅ Server Iko Online | ' + 
-                        `Wanawake wanaofuatiliwa: ${data.females_tracked}<br>` +
-                        `🕐 ${new Date(data.timestamp).toLocaleString()}`;
-                } else {
-                    serverStatus.innerHTML = '❌ Server Iko Offline';
-                }
-            } catch (error) {
-                serverStatus.innerHTML = '❌ Haiwezi kuunganisha kwenye server. Hakikisha server imeanza.';
-            }
+        function playNotificationSound() {
+            const audio = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3');
+            audio.play().catch(e => console.log('Sound play failed:', e));
         }
         
-        // Show result
-        function showResult(message, type) {
-            resultDiv.textContent = message;
-            resultDiv.className = `result ${type}`;
-            setTimeout(() => {
-                resultDiv.style.display = 'none';
-                resultDiv.className = 'result';
-            }, 5000);
+        function showNotification(message, type = 'success') {
+            const notif = document.createElement('div');
+            notif.className = 'notification';
+            notif.style.background = type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8';
+            notif.innerHTML = message;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+            playNotificationSound();
         }
         
-        // Send SMS
-        function sendSMS() {
-            const phone = phoneNumber.value;
-            const name = ownerName.value;
-            const msg = message.value;
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        // ==================== USER INTERFACE ====================
+        
+        function renderUsersList() {
+            const femaleUsers = users.filter(u => u.id !== CURRENT_USER_ID && u.gender === 'female');
             
-            if (!phone) {
-                showResult('❌ Tafadhali ingiza namba ya simu', 'error');
+            if (femaleUsers.length === 0) {
+                usersList.innerHTML = '<div style="padding: 20px; text-align: center; color: #6c757d;">Hakuna wanawake kwenye system</div>';
                 return;
             }
             
-            showResult(`📨 Inatuma SMS kwa ${name || phone}...`, 'info');
-            
-            socket.emit('send-sms-to-female', {
-                phoneNumber: phone,
-                ownerName: name || 'Mwanamke',
-                message: msg,
-                distance: 5
-            });
+            usersList.innerHTML = femaleUsers.map(user => `
+                <div class="user-item ${currentChatUser?.id === user.id ? 'active' : ''}" onclick="selectUser('${user.id}')">
+                    <div class="user-avatar">${user.avatar || '👩'}</div>
+                    <div class="user-info">
+                        <div class="user-name">
+                            ${user.name}
+                            <div class="online-status ${user.online ? '' : 'offline'}"></div>
+                        </div>
+                        <div class="last-seen">
+                            ${user.online ? 'Online' : `Last seen ${new Date(user.lastSeen).toLocaleTimeString()}`}
+                        </div>
+                    </div>
+                    ${user.unreadCount > 0 ? `<div class="unread-badge">${user.unreadCount}</div>` : ''}
+                </div>
+            `).join('');
         }
         
-        // Make call
-        function makeCall() {
-            const phone = phoneNumber.value;
-            const name = ownerName.value;
-            
-            if (!phone) {
-                showResult('❌ Tafadhali ingiza namba ya simu', 'error');
+        function renderMessages() {
+            if (!currentChatUser) {
+                messagesArea.innerHTML = '<div class="no-chat"><div><h3>💬 Karibu kwenye Female Chat</h3><p>Chagua mwanamke kutoka upande wa kushoto kuanza mazungumzo</p></div></div>';
                 return;
             }
             
-            showResult(`📞 Inampigia simu ${name || phone}...`, 'info');
+            if (messages.length === 0) {
+                messagesArea.innerHTML = '<div class="no-chat"><div><p>💬 Hakuna ujumbe bado. Anza mazungumzo!</p></div></div>';
+                return;
+            }
             
-            socket.emit('call-female', {
-                phoneNumber: phone,
-                ownerName: name || 'Mwanamke',
-                distance: 5
-            });
-        }
-        
-        // Load all females
-        async function loadFemales() {
-            try {
-                const response = await fetch('/api/females');
-                const data = await response.json();
+            messagesArea.innerHTML = messages.map(msg => {
+                const isSent = msg.senderId === CURRENT_USER_ID;
+                const statusIcon = isSent ? 
+                    (msg.status === 'read' ? '✓✓' : msg.status === 'delivered' ? '✓✓' : '✓') : '';
                 
-                if (data.success && data.females.length > 0) {
-                    let html = '<div style="max-height: 300px; overflow-y: auto;">';
-                    data.females.forEach(female => {
-                        html += `
-                            <div style="background: #f8f9fa; padding: 10px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #e83e8c;">
-                                <strong>👩 ${female.ownerName}</strong><br>
-                                📞 ${female.phoneNumber}<br>
-                                🆔 ${female.deviceId}<br>
-                                <small>📅 ${new Date(female.registeredAt).toLocaleString()}</small>
+                return `
+                    <div class="message ${isSent ? 'sent' : 'received'}">
+                        <div class="message-bubble">
+                            <div class="message-text">${escapeHtml(msg.message)}</div>
+                            <div class="message-time">
+                                ${formatTime(msg.timestamp)}
+                                ${isSent ? `<span class="message-status">${statusIcon}</span>` : ''}
                             </div>
-                        `;
-                    });
-                    html += '</div>';
-                    femalesList.innerHTML = html;
-                } else {
-                    femalesList.innerHTML = '<p>📭 Hakuna wanawake kwenye database. Ongeza mmoja.</p>';
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // ==================== CHAT FUNCTIONS ====================
+        
+        async function selectUser(userId) {
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+            
+            currentChatUser = user;
+            
+            // Update header
+            chatUserName.textContent = user.name;
+            chatAvatar.textContent = user.avatar || '👩';
+            chatUserStatus.innerHTML = user.online ? '🟢 Online' : `🔴 Offline - ${new Date(user.lastSeen).toLocaleTimeString()}`;
+            chatHeader.style.display = 'flex';
+            messageInputArea.style.display = 'flex';
+            
+            // Load messages
+            await loadMessages(userId);
+            
+            // Mark messages as read
+            const unreadMessages = messages.filter(m => m.receiverId === CURRENT_USER_ID && m.senderId === userId && !m.read);
+            unreadMessages.forEach(msg => {
+                socket.emit('mark-read', { messageId: msg.id, senderId: userId });
+            });
+            
+            // Highlight active user
+            renderUsersList();
+        }
+        
+        async function loadMessages(userId) {
+            try {
+                const response = await fetch(`/api/messages/${CURRENT_USER_ID}/${userId}`);
+                const data = await response.json();
+                if (data.success) {
+                    messages = data.messages;
+                    renderMessages();
                 }
             } catch (error) {
-                femalesList.innerHTML = '<p>❌ Kosa la kupakia data</p>';
+                console.error('Error loading messages:', error);
             }
         }
         
-        // Add new female
-        async function addFemale() {
-            const deviceId = newDeviceId.value;
-            const deviceName = newDeviceName.value;
-            const phone = newPhoneNumber.value;
-            const name = newOwnerName.value;
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !currentChatUser) return;
             
-            if (!deviceId || !phone || !name) {
-                alert('Tafadhali jaza Device ID, Namba ya Simu, na Jina Kamili');
+            const messageData = {
+                senderId: CURRENT_USER_ID,
+                receiverId: currentChatUser.id,
+                message: text,
+                type: 'text'
+            };
+            
+            socket.emit('send-message', messageData);
+            
+            // Add to UI immediately
+            const tempMessage = {
+                id: Date.now().toString(),
+                senderId: CURRENT_USER_ID,
+                receiverId: currentChatUser.id,
+                message: text,
+                status: 'sending',
+                timestamp: new Date().toISOString()
+            };
+            messages.push(tempMessage);
+            renderMessages();
+            
+            messageInput.value = '';
+            
+            // Stop typing indicator
+            socket.emit('typing', { userId: CURRENT_USER_ID, receiverId: currentChatUser.id, isTyping: false });
+        }
+        
+        function onTyping() {
+            if (!currentChatUser) return;
+            
+            socket.emit('typing', { userId: CURRENT_USER_ID, receiverId: currentChatUser.id, isTyping: true });
+            
+            if (typingTimeout) clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                socket.emit('typing', { userId: CURRENT_USER_ID, receiverId: currentChatUser.id, isTyping: false });
+            }, 2000);
+        }
+        
+        // ==================== CALL FUNCTIONS ====================
+        
+        async function startCall(callType) {
+            if (!currentChatUser) {
+                showNotification('Chagua mtu kwanza', 'error');
                 return;
             }
             
+            if (!currentChatUser.online) {
+                showNotification(`${currentChatUser.name} hayuko online`, 'error');
+                return;
+            }
+            
+            currentCall = { type: callType, with: currentChatUser.id };
+            
             try {
-                const response = await fetch('/api/females', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ deviceId, deviceName, phoneNumber: phone, ownerName: name })
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: callType === 'video' });
+                
+                if (callType === 'video') {
+                    localVideo.style.display = 'block';
+                    remoteVideo.style.display = 'block';
+                    localVideo.srcObject = localStream;
+                }
+                
+                socket.emit('call-user', {
+                    callerId: CURRENT_USER_ID,
+                    receiverId: currentChatUser.id,
+                    callType: callType
                 });
                 
-                const result = await response.json();
+                callModal.classList.add('active');
+                callerNameSpan.textContent = `Calling ${currentChatUser.name}...`;
                 
-                if (result.success) {
-                    alert(`✅ ${name} ameongezwa kwenye database!`);
-                    newDeviceId.value = '';
-                    newDeviceName.value = '';
-                    newPhoneNumber.value = '';
-                    newOwnerName.value = '';
-                    loadFemales();
-                } else {
-                    alert('Error: ' + result.error);
-                }
+                // Setup WebRTC
+                setupWebRTC(callType);
             } catch (error) {
-                alert('Error: ' + error.message);
+                console.error('Error starting call:', error);
+                showNotification('Haiwezi kuanza simu. Hakikisha microphone imewashwa.', 'error');
             }
         }
         
-        // Test gender detection
-        async function testGender() {
-            const name = testName.value;
-            if (!name) {
-                genderResult.innerHTML = '<span style="color: red;">Tafadhali ingiza jina</span>';
-                return;
-            }
+        function setupWebRTC(callType) {
+            const configuration = {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            };
             
-            try {
-                const response = await fetch(`/api/detect-gender?name=${encodeURIComponent(name)}`);
-                const data = await response.json();
-                
-                let genderText = '';
-                let color = '';
-                
-                if (data.gender === 'female') {
-                    genderText = '👩 MWANAMKE';
-                    color = '#28a745';
-                } else if (data.gender === 'male') {
-                    genderText = '👨 MWANAUME';
-                    color = '#dc3545';
-                } else {
-                    genderText = '❓ HAJUULIKANI';
-                    color = '#ffc107';
+            peerConnection = new RTCPeerConnection(configuration);
+            
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+            
+            peerConnection.ontrack = (event) => {
+                remoteVideo.srcObject = event.streams[0];
+            };
+            
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('webrtc-ice-candidate', {
+                        to: currentChatUser.id,
+                        candidate: event.candidate
+                    });
                 }
-                
-                genderResult.innerHTML = `
-                    <strong>Jina:</strong> ${name}<br>
-                    <strong>Jinsia:</strong> <span style="color: ${color}; font-weight: bold;">${genderText}</span><br>
-                    <strong>Uhakika:</strong> ${(data.confidence * 100).toFixed(1)}%<br>
-                    <strong>Mbinu:</strong> ${data.methods?.map(m => m.method).join(', ') || data.method || 'database'}<br>
-                    <strong>Alama:</strong> ${data.finalScore ? (data.finalScore * 100).toFixed(1) + '%' : 'N/A'}
-                `;
-            } catch (error) {
-                genderResult.innerHTML = '<span style="color: red;">Kosa la kuangalia jinsia</span>';
+            };
+        }
+        
+        function acceptCall() {
+            callModal.classList.remove('active');
+            showNotification(`Call with ${callerNameSpan.textContent.replace('Incoming Call from ', '')} started`, 'success');
+            
+            // Setup WebRTC answer
+            if (peerConnection) {
+                peerConnection.createAnswer()
+                    .then(answer => peerConnection.setLocalDescription(answer))
+                    .then(() => {
+                        socket.emit('webrtc-answer', {
+                            to: currentCall?.with,
+                            answer: peerConnection.localDescription
+                        });
+                    });
             }
         }
         
-        // Socket events
-        socket.on('sms-result', (data) => {
-            if (data.success) {
-                showResult(`✅ SMS imetumwa kwa mafanikio! ${data.message || ''}`, 'success');
-            } else {
-                showResult(`❌ Kosa: ${data.error || 'SMS haikutumwa'}`, 'error');
+        function rejectCall() {
+            callModal.classList.remove('active');
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
             }
-        });
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            showNotification('Call rejected', 'error');
+        }
         
-        socket.on('call-result', (data) => {
-            if (data.success) {
-                showResult(`✅ Simu inapigwa! ${data.message || ''}`, 'success');
-            } else {
-                showResult(`❌ Kosa: ${data.error || 'Simu haikupigwa'}`, 'error');
+        // ==================== LOAD USERS ====================
+        
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                if (data.success) {
+                    users = data.users;
+                    renderUsersList();
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
             }
-        });
+        }
+        
+        // ==================== SOCKET EVENTS ====================
         
         socket.on('connect', () => {
             console.log('Connected to server');
-            checkServer();
+            socket.emit('user-online', { userId: CURRENT_USER_ID, userName: CURRENT_USER_NAME });
+            loadUsers();
         });
         
-        // Event listeners
-        sendSmsBtn.addEventListener('click', sendSMS);
-        makeCallBtn.addEventListener('click', makeCall);
-        loadFemalesBtn.addEventListener('click', loadFemales);
-        addFemaleBtn.addEventListener('click', addFemale);
-        testGenderBtn.addEventListener('click', testGender);
+        socket.on('online-users', (data) => {
+            console.log('Online users:', data.users);
+            loadUsers(); // Refresh user list
+        });
+        
+        socket.on('user-status-change', (data) => {
+            console.log('User status change:', data);
+            const user = users.find(u => u.id === data.userId);
+            if (user) {
+                user.online = data.online;
+                user.lastSeen = data.lastSeen;
+                renderUsersList();
+                if (currentChatUser?.id === data.userId) {
+                    chatUserStatus.innerHTML = data.online ? '🟢 Online' : `🔴 Offline - ${new Date(data.lastSeen).toLocaleTimeString()}`;
+                }
+            }
+        });
+        
+        socket.on('new-message', (message) => {
+            console.log('New message:', message);
+            
+            if (currentChatUser?.id === message.senderId) {
+                messages.push(message);
+                renderMessages();
+            }
+            
+            // Mark as read if chat is open
+            if (currentChatUser?.id === message.senderId) {
+                socket.emit('mark-read', { messageId: message.id, senderId: message.senderId });
+            }
+            
+            showNotification(`📩 ${getUserById(message.senderId)?.name || 'Someone'}: ${message.message.substring(0, 30)}`, 'info');
+            loadUsers(); // Refresh to update unread count
+        });
+        
+        socket.on('message-status', (data) => {
+            const msg = messages.find(m => m.id === data.messageId);
+            if (msg) {
+                msg.status = data.status;
+                renderMessages();
+            }
+        });
+        
+        socket.on('message-delivered', (data) => {
+            const msg = messages.find(m => m.id === data.messageId);
+            if (msg) {
+                msg.status = 'delivered';
+                renderMessages();
+            }
+        });
+        
+        socket.on('message-read', (data) => {
+            const msg = messages.find(m => m.id === data.messageId);
+            if (msg) {
+                msg.status = 'read';
+                renderMessages();
+            }
+        });
+        
+        socket.on('user-typing', (data) => {
+            if (currentChatUser?.id === data.userId) {
+                typingIndicator.style.display = 'block';
+                typingIndicator.innerHTML = `${getUserById(data.userId)?.name} anaandika...`;
+                setTimeout(() => {
+                    typingIndicator.style.display = 'none';
+                }, 2000);
+            }
+        });
+        
+        socket.on('user-stopped-typing', (data) => {
+            if (currentChatUser?.id === data.userId) {
+                typingIndicator.style.display = 'none';
+            }
+        });
+        
+        socket.on('incoming-call', (data) => {
+            currentCall = { callerId: data.callerId, type: data.callType };
+            callModal.classList.add('active');
+            callerNameSpan.textContent = `Incoming ${data.callType} call from ${data.callerName}`;
+            
+            // Auto setup WebRTC for answer
+            if (data.callType === 'audio' || data.callType === 'video') {
+                navigator.mediaDevices.getUserMedia({ audio: true, video: data.callType === 'video' })
+                    .then(stream => {
+                        localStream = stream;
+                        setupWebRTC(data.callType);
+                    });
+            }
+        });
+        
+        socket.on('call-accepted', (data) => {
+            callModal.classList.remove('active');
+            showNotification(`Call with ${data.receiverName} started`, 'success');
+        });
+        
+        socket.on('call-rejected', () => {
+            callModal.classList.remove('active');
+            showNotification('Call was rejected', 'error');
+        });
+        
+        socket.on('webrtc-offer', async (data) => {
+            if (peerConnection) {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                socket.emit('webrtc-answer', { to: data.from, answer });
+            }
+        });
+        
+        socket.on('webrtc-answer', async (data) => {
+            if (peerConnection) {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+            }
+        });
+        
+        socket.on('webrtc-ice-candidate', (data) => {
+            if (peerConnection) {
+                peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+        });
+        
+        function getUserById(id) {
+            return users.find(u => u.id === id);
+        }
+        
+        // ==================== EVENT LISTENERS ====================
+        
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            } else {
+                onTyping();
+            }
+        });
+        
+        audioCallBtn.addEventListener('click', () => startCall('audio'));
+        videoCallBtn.addEventListener('click', () => startCall('video'));
+        acceptCallBtn.addEventListener('click', acceptCall);
+        rejectCallBtn.addEventListener('click', rejectCall);
+        
+        // Make selectUser global
+        window.selectUser = selectUser;
         
         // Initial load
-        checkServer();
+        loadUsers();
         
-        console.log('✅ Female Phone Tracker Test Version Ready!');
-        console.log('💡 Hakikisha server imeanza: node server.js');
-        console.log('🌐 Kisha fungua: http://localhost:3000');
+        console.log('✅ Female Chat System Ready!');
+        console.log('💡 Features: Real-time chat, online status, typing indicator, read receipts, voice/video calls');
     </script>
 </body>
 </html>
