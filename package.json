@@ -1,7 +1,7 @@
 {
-  "name": "female-phone-tracker",
-  "version": "1.0.0",
-  "description": "Track female phone numbers within 10 meters",
+  "name": "super-female-phone-tracker",
+  "version": "2.0.0",
+  "description": "Super advanced female phone tracker within 10 meters",
   "main": "server.js",
   "engines": {
     "node": "16.x",
