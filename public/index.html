@@ -2,617 +2,286 @@
 <html lang="sw">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Female Phone Tracker - Track Within 10 Meters</title>
-    <link rel="stylesheet" href="css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Female Phone Tracker - Test Version</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 20px;
             min-height: 100vh;
         }
-
         .container {
-            max-width: 1200px;
+            max-width: 600px;
             margin: 0 auto;
         }
-
-        header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-            padding: 20px;
-        }
-
-        header h1 {
-            font-size: 2rem;
-            margin-bottom: 10px;
-        }
-
-        .controls {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-bottom: 30px;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn-warning {
-            background: #ffc107;
-            color: #333;
-        }
-
-        .btn-sms {
-            background: #17a2b8;
-            color: white;
-        }
-
-        .btn-call {
-            background: #28a745;
-            color: white;
-        }
-
-        .status-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .indicator {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #ccc;
-            display: inline-block;
-            margin-right: 10px;
-        }
-
-        .indicator.scanning {
-            background: #28a745;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
-        }
-
-        .section {
+        .card {
             background: white;
             border-radius: 15px;
             padding: 25px;
-            margin-bottom: 30px;
-        }
-
-        .section h2 {
             margin-bottom: 20px;
-            color: #333;
-            border-bottom: 3px solid #667eea;
-            display: inline-block;
-            padding-bottom: 5px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
-
-        .devices-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .device-card {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-left: 4px solid #e83e8c;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .device-card:hover {
-            transform: translateX(5px);
-            background: #fff0f5;
-        }
-
-        .device-card h3 {
-            color: #e83e8c;
-            margin-bottom: 8px;
-        }
-
-        .device-card p {
-            margin: 5px 0;
-            color: #666;
-        }
-
-        .empty-state {
+        h1 {
+            color: white;
             text-align: center;
-            padding: 40px;
-            color: #999;
+            margin-bottom: 20px;
         }
-
-        /* Communication Panel */
-        .comms-panel {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-        }
-
-        .input-group {
+        h2 {
+            color: #667eea;
             margin-bottom: 15px;
+            font-size: 1.3rem;
         }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .input {
+        input, textarea, select {
             width: 100%;
             padding: 12px;
+            margin-bottom: 15px;
             border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 14px;
         }
-
-        .input:focus {
-            outline: none;
-            border-color: #667eea;
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
         }
-
-        textarea.input {
-            resize: vertical;
-            font-family: inherit;
+        button:hover {
+            background: #5a67d8;
         }
-
-        .comms-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
+        .btn-sms {
+            background: #17a2b8;
         }
-
-        .comms-buttons .btn {
-            flex: 1;
+        .btn-call {
+            background: #28a745;
         }
-
-        .comms-result {
+        .btn-danger {
+            background: #dc3545;
+        }
+        .result {
             margin-top: 15px;
             padding: 12px;
             border-radius: 8px;
             display: none;
         }
-
-        .comms-result.success {
+        .result.success {
             display: block;
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
         }
-
-        .comms-result.error {
+        .result.error {
             display: block;
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
-
-        .comms-result.info {
+        .result.info {
             display: block;
             background: #d1ecf1;
             color: #0c5460;
             border: 1px solid #bee5eb;
         }
-
-        .selected-device {
+        .status {
             background: #e8f4f8;
-            border: 2px solid #17a2b8;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
         }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
+        .online {
+            color: #28a745;
+            font-weight: bold;
         }
-
-        .button-group .btn {
-            flex: 1;
-            padding: 8px;
-            font-size: 12px;
-        }
-
-        @media (max-width: 768px) {
-            .comms-buttons {
-                flex-direction: column;
-            }
-            .controls {
-                flex-direction: column;
-            }
-            .btn {
-                width: 100%;
-            }
+        .offline {
+            color: #dc3545;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>👩 Female Phone Tracker</h1>
-            <p>Gundua, fuatilia na wasiliana na wanawake ndani ya mita 10</p>
-        </header>
-
-        <div class="controls">
-            <button id="startScanBtn" class="btn btn-primary">🔍 Anza Utafutaji</button>
-            <button id="stopScanBtn" class="btn btn-secondary" disabled>⏹️ Simamisha</button>
-        </div>
-
-        <div class="status-card">
-            <div>
-                <div class="indicator" id="scanStatus"></div>
-                <span id="statusText">Hajajaanza</span>
-            </div>
-            <div id="distanceInfo" style="margin-top: 15px; color: #666;"></div>
-        </div>
-
-        <div class="section">
-            <h2>👩 Wanawake Waliogunduliwa (Mita 10)</h2>
-            <div id="femaleDevices" class="devices-list">
-                <div class="empty-state">
-                    📱 Hakuna mwanamke aliye karibu ndani ya mita 10
-                </div>
+        <h1>👩 Female Phone Tracker</h1>
+        
+        <div class="card">
+            <h2>📡 Server Status</h2>
+            <div class="status" id="serverStatus">
+                Inaangalia server...
             </div>
         </div>
 
-        <div class="section">
-            <h2>📨 Wasiliana na Mwanamke</h2>
-            <div class="comms-panel">
-                <div class="input-group">
-                    <label>📞 Namba ya Simu</label>
-                    <input type="tel" id="commsPhone" class="input" placeholder="+255712345678">
-                </div>
-                <div class="input-group">
-                    <label>👩 Jina la Mwanamke</label>
-                    <input type="text" id="commsName" class="input" placeholder="Jina la mwanamke">
-                </div>
-                <div class="input-group">
-                    <label>💬 Ujumbe wako</label>
-                    <textarea id="commsMessage" class="input" rows="4" placeholder="Andika ujumbe wako hapa...&#10;&#10;Mfano: Habari Fatma, nimekugundua karibu nami. Tungependa kuwasiliana nawe."></textarea>
-                </div>
-                <div class="comms-buttons">
-                    <button id="sendSmsBtn" class="btn btn-sms">📨 TUMA SMS</button>
-                    <button id="makeCallBtn" class="btn btn-call">📞 PIGA SIMU</button>
-                </div>
-                <div id="commsResult" class="comms-result"></div>
-            </div>
+        <div class="card">
+            <h2>📨 Tuma SMS kwa Mwanamke</h2>
+            <input type="tel" id="phoneNumber" placeholder="Namba ya Simu (+255...)" value="+255712345678">
+            <input type="text" id="ownerName" placeholder="Jina la Mwanamke" value="Fatma">
+            <textarea id="message" rows="4" placeholder="Andika ujumbe wako hapa...">Habari Fatma, nimekugundua kupitia tracker yetu. Uko karibu nami ndani ya mita 10. Tungependa kuwasiliana nawe.</textarea>
+            <button id="sendSmsBtn" class="btn-sms">📨 TUMA SMS</button>
+            <button id="makeCallBtn" class="btn-call">📞 PIGA SIMU</button>
+            <div id="result" class="result"></div>
         </div>
 
-        <div class="section">
-            <h2>➕ Ongeza Mwanamke Kwenye Database</h2>
-            <div class="comms-panel">
-                <div class="input-group">
-                    <label>🆔 Device ID</label>
-                    <input type="text" id="newDeviceId" class="input" placeholder="Kwa mfano: FATMA-001">
-                </div>
-                <div class="input-group">
-                    <label>📱 Jina la Kifaa</label>
-                    <input type="text" id="newDeviceName" class="input" placeholder="Kwa mfano: Fatma's iPhone">
-                </div>
-                <div class="input-group">
-                    <label>📞 Namba ya Simu</label>
-                    <input type="tel" id="newPhoneNumber" class="input" placeholder="+255712345678">
-                </div>
-                <div class="input-group">
-                    <label>👩 Jina Kamili</label>
-                    <input type="text" id="newOwnerName" class="input" placeholder="Kwa mfano: Fatma Hassan">
-                </div>
-                <button id="addDeviceBtn" class="btn btn-success">➕ Ongeza Mwanamke</button>
-            </div>
+        <div class="card">
+            <h2>👩 Wanawake Waliopo Kwenye Database</h2>
+            <button id="loadFemalesBtn">📋 ORODHA YA WANAWAKE</button>
+            <div id="femalesList" style="margin-top: 15px;"></div>
+        </div>
+
+        <div class="card">
+            <h2>➕ Ongeza Mwanamke Mpya</h2>
+            <input type="text" id="newDeviceId" placeholder="Device ID (kwa mfano: FATMA-001)">
+            <input type="text" id="newDeviceName" placeholder="Jina la Kifaa">
+            <input type="tel" id="newPhoneNumber" placeholder="Namba ya Simu">
+            <input type="text" id="newOwnerName" placeholder="Jina Kamili">
+            <button id="addFemaleBtn" style="background: #28a745;">➕ Ongeza Mwanamke</button>
+        </div>
+
+        <div class="card">
+            <h2>🔍 Test Gender Detection</h2>
+            <input type="text" id="testName" placeholder="Ingiza jina (kwa mfano: Fatma)">
+            <button id="testGenderBtn">🔍 GUNDUA JINSIA</button>
+            <div id="genderResult" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;"></div>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-
+        
         // DOM elements
-        const startScanBtn = document.getElementById('startScanBtn');
-        const stopScanBtn = document.getElementById('stopScanBtn');
-        const scanStatus = document.getElementById('scanStatus');
-        const statusText = document.getElementById('statusText');
-        const distanceInfo = document.getElementById('distanceInfo');
-        const femaleDevicesDiv = document.getElementById('femaleDevices');
-        const commsPhone = document.getElementById('commsPhone');
-        const commsName = document.getElementById('commsName');
-        const commsMessage = document.getElementById('commsMessage');
+        const serverStatus = document.getElementById('serverStatus');
+        const phoneNumber = document.getElementById('phoneNumber');
+        const ownerName = document.getElementById('ownerName');
+        const message = document.getElementById('message');
         const sendSmsBtn = document.getElementById('sendSmsBtn');
         const makeCallBtn = document.getElementById('makeCallBtn');
-        const commsResult = document.getElementById('commsResult');
-        const addDeviceBtn = document.getElementById('addDeviceBtn');
+        const resultDiv = document.getElementById('result');
+        const loadFemalesBtn = document.getElementById('loadFemalesBtn');
+        const femalesList = document.getElementById('femalesList');
+        const addFemaleBtn = document.getElementById('addFemaleBtn');
+        const testGenderBtn = document.getElementById('testGenderBtn');
+        const testName = document.getElementById('testName');
+        const genderResult = document.getElementById('genderResult');
+        
+        // New female inputs
         const newDeviceId = document.getElementById('newDeviceId');
         const newDeviceName = document.getElementById('newDeviceName');
         const newPhoneNumber = document.getElementById('newPhoneNumber');
         const newOwnerName = document.getElementById('newOwnerName');
-
-        let isScanning = false;
-        let scanner = null;
-        let detectedFemales = [];
-
-        // Bluetooth Scanner Class
-        class BluetoothScanner {
-            constructor() {
-                this.device = null;
-                this.isScanning = false;
-                this.interval = null;
-            }
-
-            calculateDistance(rssi) {
-                const txPower = -59;
-                const ratio = (txPower - rssi) / (10 * 2);
-                const distance = Math.pow(10, ratio);
-                return Math.min(50, Math.max(0.5, distance));
-            }
-
-            async startScanning() {
-                if (!navigator.bluetooth) {
-                    alert('Web Bluetooth haitumiki. Tafadhali tumia Chrome au Edge.');
-                    return false;
-                }
-
-                this.isScanning = true;
-                
-                try {
-                    this.device = await navigator.bluetooth.requestDevice({
-                        acceptAllDevices: true,
-                        optionalServices: ['generic_access']
-                    });
-
-                    if (!this.device) {
-                        return false;
-                    }
-
-                    await this.device.gatt.connect();
-                    
-                    if (this.device.watchAdvertisements) {
-                        await this.device.watchAdvertisements();
-                        
-                        this.device.addEventListener('advertisementreceived', (event) => {
-                            const rssi = event.rssi;
-                            const distance = this.calculateDistance(rssi);
-                            
-                            socket.emit('device-detected', {
-                                deviceId: this.device.id,
-                                deviceName: this.device.name || 'Unknown',
-                                distance: distance,
-                                rssi: rssi
-                            });
-                        });
-                    } else {
-                        this.simulateScanning();
-                    }
-                    
-                    return true;
-                } catch (error) {
-                    console.error('Scan error:', error);
-                    this.isScanning = false;
-                    return false;
-                }
-            }
-
-            simulateScanning() {
-                let distance = 15;
-                let decreasing = true;
-                
-                this.interval = setInterval(() => {
-                    if (!this.isScanning) return;
-                    
-                    if (decreasing) {
-                        distance -= 0.5;
-                        if (distance <= 2) decreasing = false;
-                    } else {
-                        distance += 0.5;
-                        if (distance >= 20) decreasing = true;
-                    }
-                    
-                    socket.emit('device-detected', {
-                        deviceId: 'SIMULATED-DEVICE',
-                        deviceName: 'Simulated iPhone',
-                        distance: distance,
-                        rssi: -59 - 20 * Math.log10(distance)
-                    });
-                }, 3000);
-            }
-
-            stopScanning() {
-                this.isScanning = false;
-                if (this.interval) {
-                    clearInterval(this.interval);
-                    this.interval = null;
-                }
-                if (this.device && this.device.gatt?.connected) {
-                    this.device.gatt.disconnect();
-                }
-            }
-        }
-
-        function startScanning() {
-            if (isScanning) {
-                alert('Utafutaji tayari unaendelea');
-                return;
-            }
-            
-            scanner = new BluetoothScanner();
-            statusText.textContent = 'Inatafuta...';
-            scanStatus.className = 'indicator scanning';
-            startScanBtn.disabled = true;
-            stopScanBtn.disabled = false;
-            
-            scanner.startScanning().then(success => {
-                if (success) {
-                    isScanning = true;
-                    statusText.textContent = 'Inatafuta wanawake ndani ya mita 10...';
+        
+        // Check server status
+        async function checkServer() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    serverStatus.innerHTML = '✅ Server Iko Online | ' + 
+                        `Wanawake wanaofuatiliwa: ${data.females_tracked}<br>` +
+                        `🕐 ${new Date(data.timestamp).toLocaleString()}`;
                 } else {
-                    stopScanning();
-                    alert('Haiwezi kuanza utafutaji. Hakikisha Bluetooth imewashwa.');
+                    serverStatus.innerHTML = '❌ Server Iko Offline';
                 }
-            });
-        }
-
-        function stopScanning() {
-            if (scanner) {
-                scanner.stopScanning();
+            } catch (error) {
+                serverStatus.innerHTML = '❌ Haiwezi kuunganisha kwenye server. Hakikisha server imeanza.';
             }
-            isScanning = false;
-            statusText.textContent = 'Utafutaji umesimama';
-            scanStatus.className = 'indicator';
-            startScanBtn.disabled = false;
-            stopScanBtn.disabled = true;
         }
-
-        function updateFemaleList(females) {
-            if (females.length === 0) {
-                femaleDevicesDiv.innerHTML = '<div class="empty-state">📱 Hakuna mwanamke aliye karibu ndani ya mita 10</div>';
-                return;
-            }
-            
-            femaleDevicesDiv.innerHTML = females.map(female => `
-                <div class="device-card" onclick="selectFemale('${female.phoneNumber}', '${female.ownerName}')">
-                    <h3>👩 ${female.ownerName}</h3>
-                    <p>📞 ${female.phoneNumber}</p>
-                    <p>📏 Umbali: ${female.distance?.toFixed(1) || '?'} mita</p>
-                    <p>🕐 Aligunduliwa: ${new Date(female.timestamp).toLocaleTimeString()}</p>
-                    <div class="button-group">
-                        <button class="btn btn-sms" onclick="event.stopPropagation(); sendDirectSMS('${female.phoneNumber}', '${female.ownerName}')">📨 SMS</button>
-                        <button class="btn btn-call" onclick="event.stopPropagation(); callDirect('${female.phoneNumber}', '${female.ownerName}')">📞 Simu</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Function to select female and fill form
-        window.selectFemale = (phone, name) => {
-            commsPhone.value = phone;
-            commsName.value = name;
-            commsMessage.value = `Habari ${name}, nimekugundua kupitia tracker yetu. Uko karibu nami. Tungependa kuwasiliana nawe.`;
-            
-            // Highlight selected
-            document.querySelectorAll('.device-card').forEach(card => {
-                card.classList.remove('selected-device');
-            });
-            event.currentTarget.classList.add('selected-device');
-            
-            showCommsResult(`✅ Umemchagua ${name}. Sasa unaweza kumtumia SMS au kumpigia simu.`, 'info');
-        };
-
-        // Send SMS direct
-        window.sendDirectSMS = (phone, name) => {
-            commsPhone.value = phone;
-            commsName.value = name;
-            sendSMS();
-        };
-
-        // Call direct
-        window.callDirect = (phone, name) => {
-            commsPhone.value = phone;
-            commsName.value = name;
-            makeCall();
-        };
-
-        function sendSMS() {
-            const phoneNumber = commsPhone.value;
-            const name = commsName.value;
-            const message = commsMessage.value;
-            
-            if (!phoneNumber) {
-                showCommsResult('❌ Tafadhali ingiza namba ya simu', 'error');
-                return;
-            }
-            
-            if (!message) {
-                showCommsResult('❌ Tafadhali andika ujumbe', 'error');
-                return;
-            }
-            
-            showCommsResult(`📨 Inatuma SMS kwa ${name || phoneNumber}...`, 'info');
-            
-            socket.emit('send-sms-to-female', {
-                phoneNumber: phoneNumber,
-                ownerName: name || 'Mwanamke',
-                message: message,
-                distance: 5
-            });
-        }
-
-        function makeCall() {
-            const phoneNumber = commsPhone.value;
-            const name = commsName.value;
-            
-            if (!phoneNumber) {
-                showCommsResult('❌ Tafadhali ingiza namba ya simu', 'error');
-                return;
-            }
-            
-            showCommsResult(`📞 Inampigia simu ${name || phoneNumber}...`, 'info');
-            
-            socket.emit('call-female', {
-                phoneNumber: phoneNumber,
-                ownerName: name || 'Mwanamke',
-                distance: 5
-            });
-        }
-
-        function showCommsResult(message, type) {
-            commsResult.textContent = message;
-            commsResult.className = `comms-result ${type}`;
+        
+        // Show result
+        function showResult(message, type) {
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${type}`;
             setTimeout(() => {
-                commsResult.style.display = 'none';
-                commsResult.className = 'comms-result';
+                resultDiv.style.display = 'none';
+                resultDiv.className = 'result';
             }, 5000);
         }
-
+        
+        // Send SMS
+        function sendSMS() {
+            const phone = phoneNumber.value;
+            const name = ownerName.value;
+            const msg = message.value;
+            
+            if (!phone) {
+                showResult('❌ Tafadhali ingiza namba ya simu', 'error');
+                return;
+            }
+            
+            showResult(`📨 Inatuma SMS kwa ${name || phone}...`, 'info');
+            
+            socket.emit('send-sms-to-female', {
+                phoneNumber: phone,
+                ownerName: name || 'Mwanamke',
+                message: msg,
+                distance: 5
+            });
+        }
+        
+        // Make call
+        function makeCall() {
+            const phone = phoneNumber.value;
+            const name = ownerName.value;
+            
+            if (!phone) {
+                showResult('❌ Tafadhali ingiza namba ya simu', 'error');
+                return;
+            }
+            
+            showResult(`📞 Inampigia simu ${name || phone}...`, 'info');
+            
+            socket.emit('call-female', {
+                phoneNumber: phone,
+                ownerName: name || 'Mwanamke',
+                distance: 5
+            });
+        }
+        
+        // Load all females
+        async function loadFemales() {
+            try {
+                const response = await fetch('/api/females');
+                const data = await response.json();
+                
+                if (data.success && data.females.length > 0) {
+                    let html = '<div style="max-height: 300px; overflow-y: auto;">';
+                    data.females.forEach(female => {
+                        html += `
+                            <div style="background: #f8f9fa; padding: 10px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #e83e8c;">
+                                <strong>👩 ${female.ownerName}</strong><br>
+                                📞 ${female.phoneNumber}<br>
+                                🆔 ${female.deviceId}<br>
+                                <small>📅 ${new Date(female.registeredAt).toLocaleString()}</small>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    femalesList.innerHTML = html;
+                } else {
+                    femalesList.innerHTML = '<p>📭 Hakuna wanawake kwenye database. Ongeza mmoja.</p>';
+                }
+            } catch (error) {
+                femalesList.innerHTML = '<p>❌ Kosa la kupakia data</p>';
+            }
+        }
+        
+        // Add new female
         async function addFemale() {
             const deviceId = newDeviceId.value;
             const deviceName = newDeviceName.value;
-            const phoneNumber = newPhoneNumber.value;
-            const ownerName = newOwnerName.value;
+            const phone = newPhoneNumber.value;
+            const name = newOwnerName.value;
             
-            if (!deviceId || !phoneNumber || !ownerName) {
+            if (!deviceId || !phone || !name) {
                 alert('Tafadhali jaza Device ID, Namba ya Simu, na Jina Kamili');
                 return;
             }
@@ -621,74 +290,99 @@
                 const response = await fetch('/api/females', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ deviceId, deviceName, phoneNumber, ownerName })
+                    body: JSON.stringify({ deviceId, deviceName, phoneNumber: phone, ownerName: name })
                 });
                 
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert(`✅ ${ownerName} ameongezwa kwenye database!`);
+                    alert(`✅ ${name} ameongezwa kwenye database!`);
                     newDeviceId.value = '';
                     newDeviceName.value = '';
                     newPhoneNumber.value = '';
                     newOwnerName.value = '';
+                    loadFemales();
                 } else {
                     alert('Error: ' + result.error);
                 }
             } catch (error) {
-                alert('Error adding female contact');
+                alert('Error: ' + error.message);
             }
         }
-
-        // Socket events
-        socket.on('female-detected', (data) => {
-            console.log('Female detected:', data);
-            
-            const exists = detectedFemales.find(f => f.deviceId === data.deviceId);
-            if (!exists) {
-                detectedFemales.unshift(data);
-                if (detectedFemales.length > 20) detectedFemales.pop();
-            } else {
-                exists.distance = data.distance;
-                exists.timestamp = data.timestamp;
+        
+        // Test gender detection
+        async function testGender() {
+            const name = testName.value;
+            if (!name) {
+                genderResult.innerHTML = '<span style="color: red;">Tafadhali ingiza jina</span>';
+                return;
             }
             
-            updateFemaleList(detectedFemales);
-            
-            showCommsResult(`👩 ${data.ownerName} amegunduliwa umbali wa ${data.distance.toFixed(1)}m!`, 'success');
-        });
+            try {
+                const response = await fetch(`/api/detect-gender?name=${encodeURIComponent(name)}`);
+                const data = await response.json();
+                
+                let genderText = '';
+                let color = '';
+                
+                if (data.gender === 'female') {
+                    genderText = '👩 MWANAMKE';
+                    color = '#28a745';
+                } else if (data.gender === 'male') {
+                    genderText = '👨 MWANAUME';
+                    color = '#dc3545';
+                } else {
+                    genderText = '❓ HAJUULIKANI';
+                    color = '#ffc107';
+                }
+                
+                genderResult.innerHTML = `
+                    <strong>Jina:</strong> ${name}<br>
+                    <strong>Jinsia:</strong> <span style="color: ${color}; font-weight: bold;">${genderText}</span><br>
+                    <strong>Uhakika:</strong> ${(data.confidence * 100).toFixed(1)}%<br>
+                    <strong>Mbinu:</strong> ${data.methods?.map(m => m.method).join(', ') || data.method || 'database'}<br>
+                    <strong>Alama:</strong> ${data.finalScore ? (data.finalScore * 100).toFixed(1) + '%' : 'N/A'}
+                `;
+            } catch (error) {
+                genderResult.innerHTML = '<span style="color: red;">Kosa la kuangalia jinsia</span>';
+            }
+        }
         
-        socket.on('unknown-device', (data) => {
-            console.log('Unknown device:', data);
-        });
-        
+        // Socket events
         socket.on('sms-result', (data) => {
             if (data.success) {
-                showCommsResult(`✅ SMS imetumwa kwa mafanikio! ${data.message || ''}`, 'success');
+                showResult(`✅ SMS imetumwa kwa mafanikio! ${data.message || ''}`, 'success');
             } else {
-                showCommsResult(`❌ Kosa: ${data.error || 'SMS haikutumwa'}`, 'error');
+                showResult(`❌ Kosa: ${data.error || 'SMS haikutumwa'}`, 'error');
             }
         });
         
         socket.on('call-result', (data) => {
             if (data.success) {
-                showCommsResult(`✅ Simu inapigwa! ${data.message || ''}`, 'success');
+                showResult(`✅ Simu inapigwa! ${data.message || ''}`, 'success');
             } else {
-                showCommsResult(`❌ Kosa: ${data.error || 'Simu haikupigwa'}`, 'error');
+                showResult(`❌ Kosa: ${data.error || 'Simu haikupigwa'}`, 'error');
             }
         });
-
+        
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            checkServer();
+        });
+        
         // Event listeners
-        startScanBtn.addEventListener('click', startScanning);
-        stopScanBtn.addEventListener('click', stopScanning);
         sendSmsBtn.addEventListener('click', sendSMS);
         makeCallBtn.addEventListener('click', makeCall);
-        addDeviceBtn.addEventListener('click', addFemale);
+        loadFemalesBtn.addEventListener('click', loadFemales);
+        addFemaleBtn.addEventListener('click', addFemale);
+        testGenderBtn.addEventListener('click', testGender);
         
-        // Set default message
-        commsMessage.value = 'Habari, nimekugundua kupitia tracker yetu. Uko karibu nami ndani ya mita 10. Tungependa kuwasiliana nawe.';
-
-        console.log('✅ Female Phone Tracker Ready!');
+        // Initial load
+        checkServer();
+        
+        console.log('✅ Female Phone Tracker Test Version Ready!');
+        console.log('💡 Hakikisha server imeanza: node server.js');
+        console.log('🌐 Kisha fungua: http://localhost:3000');
     </script>
 </body>
 </html>
