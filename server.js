@@ -6,313 +6,6 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-// Twilio setup
-const twilio = require('twilio');
-const twilioClient = twilio(
-    process.env.TWILIO_ACCOUNT_SID,
-    process.env.TWILIO_AUTH_TOKEN
-);
-
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
-});
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
-
-// Database file path
-const DEVICES_DB_PATH = path.join(__dirname, 'data', 'devices.json');
-
-// Ensure data directory exists
-if (!fs.existsSync(path.join(__dirname, 'data'))) {
-    fs.mkdirSync(path.join(__dirname, 'data'));
-}
-
-// Initialize devices database
-let devicesDatabase = [];
-
-// Load devices from file
-function loadDevices() {
-    try {
-        if (fs.existsSync(DEVICES_DB_PATH)) {
-            const data = fs.readFileSync(DEVICES_DB_PATH, 'utf8');
-            devicesDatabase = JSON.parse(data);
-            console.log(`✅ Loaded ${devicesDatabase.length} devices from database`);
-        } else {
-            // Sample data - replace with your actual data
-            devicesDatabase = [
-                {
-                    deviceId: "sample-device-1",
-                    deviceName: "Fatma iPhone",
-                    phoneNumber: "+255712345678",
-                    ownerName: "Fatma Hassan",
-                    gender: "female",
-                    registeredAt: new Date().toISOString()
-                },
-                {
-                    deviceId: "sample-device-2", 
-                    deviceName: "Aisha Samsung",
-                    phoneNumber: "+255765432109",
-                    ownerName: "Aisha Juma",
-                    gender: "female",
-                    registeredAt: new Date().toISOString()
-                },
-                {
-                    deviceId: "sample-device-3",
-                    deviceName: "Mariam Phone",
-                    phoneNumber: "+255756789012",
-                    ownerName: "Mariam Salim",
-                    gender: "female",
-                    registeredAt: new Date().toISOString()
-                }
-            ];
-            saveDevices();
-        }
-    } catch (error) {
-        console.error('Error loading devices:', error);
-    }
-}
-
-// Save devices to file
-function saveDevices() {
-    try {
-        fs.writeFileSync(DEVICES_DB_PATH, JSON.stringify(devicesDatabase, null, 2));
-        console.log('💾 Devices database saved');
-    } catch (error) {
-        console.error('Error saving devices:', error);
-    }
-}
-
-// Find phone number by device ID
-function findPhoneByDeviceId(deviceId) {
-    const device = devicesDatabase.find(d => 
-        d.deviceId === deviceId || 
-        d.deviceName?.toLowerCase() === deviceId?.toLowerCase()
-    );
-    return device;
-}
-
-// Add or update device
-function addDevice(deviceId, deviceName, phoneNumber, ownerName, gender) {
-    const existingIndex = devicesDatabase.findIndex(d => d.deviceId === deviceId);
-    
-    const deviceData = {
-        deviceId,
-        deviceName,
-        phoneNumber,
-        ownerName,
-        gender,
-        lastSeen: new Date().toISOString()
-    };
-    
-    if (existingIndex >= 0) {
-        devicesDatabase[existingIndex] = { ...devicesDatabase[existingIndex], ...deviceData };
-    } else {
-        devicesDatabase.push(deviceData);
-    }
-    
-    saveDevices();
-    return deviceData;
-}
-
-// Send SMS via Twilio
-async function sendSMS(phoneNumber, message) {
-    try {
-        const result = await twilioClient.messages.create({
-            body: message,
-            from: process.env.TWILIO_PHONE_NUMBER,
-            to: phoneNumber
-        });
-        console.log(`📱 SMS sent to ${phoneNumber}: ${result.sid}`);
-        return { success: true, sid: result.sid };
-    } catch (error) {
-        console.error('SMS error:', error);
-        return { success: false, error: error.message };
-    }
-}
-
-// Make a call via Twilio
-async function makeCall(phoneNumber, message) {
-    try {
-        const twiml = new twilio.twiml.VoiceResponse();
-        twiml.say(message, { voice: 'alice', language: 'sw' });
-        
-        const call = await twilioClient.calls.create({
-            twiml: twiml.toString(),
-            to: phoneNumber,
-            from: process.env.TWILIO_PHONE_NUMBER
-        });
-        console.log(`📞 Call initiated to ${phoneNumber}: ${call.sid}`);
-        return { success: true, callSid: call.sid };
-    } catch (error) {
-        console.error('Call error:', error);
-        return { success: false, error: error.message };
-    }
-}
-
-// API Routes
-app.get('/api/devices', (req, res) => {
-    res.json(devicesDatabase);
-});
-
-app.post('/api/devices', (req, res) => {
-    const { deviceId, deviceName, phoneNumber, ownerName, gender } = req.body;
-    
-    if (!deviceId || !phoneNumber) {
-        return res.status(400).json({ error: 'deviceId and phoneNumber are required' });
-    }
-    
-    const device = addDevice(deviceId, deviceName, phoneNumber, ownerName, gender);
-    res.json({ success: true, device });
-});
-
-app.delete('/api/devices/:deviceId', (req, res) => {
-    const { deviceId } = req.params;
-    devicesDatabase = devicesDatabase.filter(d => d.deviceId !== deviceId);
-    saveDevices();
-    res.json({ success: true });
-});
-
-// WebSocket for real-time tracking
-io.on('connection', (socket) => {
-    console.log('🟢 Client connected:', socket.id);
-    
-    socket.on('device-detected', async (data) => {
-        const { deviceId, deviceName, distance, rssi } = data;
-        
-        console.log(`📡 Device detected: ${deviceName || deviceId}, Distance: ${distance.toFixed(2)}m, RSSI: ${rssi}dBm`);
-        
-        // Check if within 10 meters
-        if (distance <= 10) {
-            // Find device in database
-            const deviceInfo = findPhoneByDeviceId(deviceId);
-            
-            if (deviceInfo) {
-                console.log(`✅ Found in database: ${deviceInfo.ownerName} (${deviceInfo.gender})`);
-                
-                // Prepare detection result
-                const detection = {
-                    deviceId,
-                    deviceName: deviceInfo.deviceName,
-                    phoneNumber: deviceInfo.phoneNumber,
-                    ownerName: deviceInfo.ownerName,
-                    gender: deviceInfo.gender,
-                    distance: distance,
-                    rssi: rssi,
-                    timestamp: new Date().toISOString(),
-                    within10Meters: true
-                };
-                
-                // Send to all connected clients
-                io.emit('detection-update', detection);
-                
-                // Auto-send notification if female
-                if (deviceInfo.gender === 'female') {
-                    const message = `Habari ${deviceInfo.ownerName}! Kifaa chako kimegunduliwa umbali wa ${distance.toFixed(1)}m. Karibu!`;
-                    
-                    // Optional: Send SMS automatically
-                    // await sendSMS(deviceInfo.phoneNumber, message);
-                    
-                    // Emit notification
-                    io.emit('notification', {
-                        phoneNumber: deviceInfo.phoneNumber,
-                        message: message,
-                        distance: distance
-                    });
-                }
-            } else {
-                console.log(`⚠️ Device ${deviceId} not found in database`);
-                io.emit('unknown-device', {
-                    deviceId,
-                    deviceName,
-                    distance,
-                    rssi,
-                    message: 'Device not registered. Add to database first.'
-                });
-            }
-        }
-    });
-    
-    socket.on('send-sms', async (data) => {
-        const { phoneNumber, message } = data;
-        const result = await sendSMS(phoneNumber, message);
-        socket.emit('sms-result', result);
-    });
-    
-    socket.on('make-call', async (data) => {
-        const { phoneNumber, message } = data;
-        const result = await makeCall(phoneNumber, message);
-        socket.emit('call-result', result);
-    });
-    
-    socket.on('disconnect', () => {
-        console.log('🔴 Client disconnected:', socket.id);
-    });
-});
-
-// Load database on startup
-loadDevices();
-
-// Start server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
-});
-
-
-
-// server.js - mock version without Twilio
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config();
-
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, {
-    cors: { origin: "*", methods: ["GET", "POST"] }
-});
-
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
-
-// Mock functions - no Twilio required
-async function sendSMS(phoneNumber, message) {
-    console.log(`📱 [MOCK] SMS to ${phoneNumber}: ${message}`);
-    return { success: true, sid: 'mock-sms-' + Date.now() };
-}
-
-async function makeCall(phoneNumber, message) {
-    console.log(`📞 [MOCK] Call to ${phoneNumber}: ${message}`);
-    return { success: true, callSid: 'mock-call-' + Date.now() };
-}
-
-// Rest of your server.js code remains the same
-// Just remove the Twilio require and use these mock functions
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
-});
-
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
-
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -331,21 +24,39 @@ if (!fs.existsSync(path.join(__dirname, 'data'))) {
     fs.mkdirSync(path.join(__dirname, 'data'));
 }
 
-// Load devices
-let devicesDatabase = [];
+// Initialize database with female contacts only
+let femaleDevicesDatabase = [];
+
 function loadDevices() {
     try {
         if (fs.existsSync(DEVICES_DB_PATH)) {
             const data = fs.readFileSync(DEVICES_DB_PATH, 'utf8');
-            devicesDatabase = JSON.parse(data);
-            console.log(`✅ Loaded ${devicesDatabase.length} devices`);
+            femaleDevicesDatabase = JSON.parse(data);
+            console.log(`✅ Loaded ${femaleDevicesDatabase.length} female contacts`);
         } else {
-            devicesDatabase = [
+            // Sample female contacts - REPLACE WITH YOUR DATA
+            femaleDevicesDatabase = [
                 {
-                    deviceId: "test-device-1",
-                    deviceName: "Test iPhone",
+                    deviceId: "FATMA-PHONE-001",
+                    deviceName: "Fatma's iPhone",
                     phoneNumber: "+255712345678",
-                    ownerName: "Fatma Test",
+                    ownerName: "Fatma Hassan",
+                    gender: "female",
+                    registeredAt: new Date().toISOString()
+                },
+                {
+                    deviceId: "AISHA-SAMSUNG-002",
+                    deviceName: "Aisha's Samsung",
+                    phoneNumber: "+255765432109",
+                    ownerName: "Aisha Juma",
+                    gender: "female",
+                    registeredAt: new Date().toISOString()
+                },
+                {
+                    deviceId: "MARIAM-HUAWEI-003",
+                    deviceName: "Mariam's Phone",
+                    phoneNumber: "+255756789012",
+                    ownerName: "Mariam Salim",
                     gender: "female",
                     registeredAt: new Date().toISOString()
                 }
@@ -354,129 +65,185 @@ function loadDevices() {
         }
     } catch (error) {
         console.error('Error loading devices:', error);
-        devicesDatabase = [];
+        femaleDevicesDatabase = [];
     }
 }
 
 function saveDevices() {
     try {
-        fs.writeFileSync(DEVICES_DB_PATH, JSON.stringify(devicesDatabase, null, 2));
-        console.log('💾 Devices saved');
+        fs.writeFileSync(DEVICES_DB_PATH, JSON.stringify(femaleDevicesDatabase, null, 2));
+        console.log('💾 Female contacts database saved');
     } catch (error) {
         console.error('Error saving devices:', error);
     }
 }
 
-function findPhoneByDeviceId(deviceId) {
-    return devicesDatabase.find(d => 
-        d.deviceId === deviceId || 
+// Only search in female database
+function findFemaleByDeviceId(deviceId) {
+    const female = femaleDevicesDatabase.find(d => 
+        d.deviceId.toLowerCase() === deviceId.toLowerCase() || 
         d.deviceName?.toLowerCase() === deviceId?.toLowerCase()
     );
+    return female;
 }
 
-function addDevice(deviceId, deviceName, phoneNumber, ownerName, gender) {
-    const existingIndex = devicesDatabase.findIndex(d => d.deviceId === deviceId);
-    const deviceData = { deviceId, deviceName, phoneNumber, ownerName, gender, lastSeen: new Date().toISOString() };
+// Add new female contact
+function addFemaleContact(deviceId, deviceName, phoneNumber, ownerName) {
+    const existingIndex = femaleDevicesDatabase.findIndex(d => d.deviceId === deviceId);
+    
+    const contactData = {
+        deviceId,
+        deviceName,
+        phoneNumber,
+        ownerName,
+        gender: "female",
+        lastSeen: new Date().toISOString(),
+        registeredAt: existingIndex >= 0 ? femaleDevicesDatabase[existingIndex].registeredAt : new Date().toISOString()
+    };
     
     if (existingIndex >= 0) {
-        devicesDatabase[existingIndex] = { ...devicesDatabase[existingIndex], ...deviceData };
+        femaleDevicesDatabase[existingIndex] = { ...femaleDevicesDatabase[existingIndex], ...contactData };
     } else {
-        devicesDatabase.push(deviceData);
+        femaleDevicesDatabase.push(contactData);
     }
+    
     saveDevices();
-    return deviceData;
+    return contactData;
 }
 
-// Mock communication
-async function sendSMS(phoneNumber, message) {
-    console.log(`📱 SMS to ${phoneNumber}: ${message}`);
-    return { success: true, message: "SMS sent (mock)" };
+// Send SMS (mock for Heroku - no Twilio required)
+async function sendSMSToFemale(phoneNumber, ownerName, distance) {
+    const message = `Habari ${ownerName}! Kifaa chako kimegunduliwa umbali wa ${distance.toFixed(1)} mita. Uko karibu na tracker yetu.`;
+    console.log(`📱 [SMS TO FEMALE] ${phoneNumber}: ${message}`);
+    
+    // Kwenye production, unaweza ku-add Twilio hapa
+    return { success: true, message: "SMS sent successfully", to: phoneNumber };
 }
 
-async function makeCall(phoneNumber, message) {
-    console.log(`📞 Call to ${phoneNumber}: ${message}`);
-    return { success: true, message: "Call initiated (mock)" };
+// Make call (mock for Heroku)
+async function callFemale(phoneNumber, ownerName, distance) {
+    console.log(`📞 [CALL TO FEMALE] ${phoneNumber}: Calling ${ownerName} - Distance ${distance.toFixed(1)}m`);
+    return { success: true, message: "Call initiated", to: phoneNumber };
 }
 
 // API Routes
-app.get('/api/devices', (req, res) => {
-    res.json(devicesDatabase);
+app.get('/api/females', (req, res) => {
+    res.json({ 
+        success: true, 
+        count: femaleDevicesDatabase.length,
+        females: femaleDevicesDatabase 
+    });
 });
 
-app.post('/api/devices', (req, res) => {
-    const { deviceId, deviceName, phoneNumber, ownerName, gender } = req.body;
-    if (!deviceId || !phoneNumber) {
-        return res.status(400).json({ error: 'deviceId and phoneNumber required' });
+app.post('/api/females', (req, res) => {
+    const { deviceId, deviceName, phoneNumber, ownerName } = req.body;
+    
+    if (!deviceId || !phoneNumber || !ownerName) {
+        return res.status(400).json({ 
+            error: 'deviceId, phoneNumber, and ownerName are required' 
+        });
     }
-    const device = addDevice(deviceId, deviceName, phoneNumber, ownerName, gender);
-    res.json({ success: true, device });
+    
+    const contact = addFemaleContact(deviceId, deviceName, phoneNumber, ownerName);
+    res.json({ success: true, message: "Female contact added", contact });
 });
 
-app.delete('/api/devices/:deviceId', (req, res) => {
+app.delete('/api/females/:deviceId', (req, res) => {
     const { deviceId } = req.params;
-    devicesDatabase = devicesDatabase.filter(d => d.deviceId !== deviceId);
+    const removed = femaleDevicesDatabase.find(d => d.deviceId === deviceId);
+    femaleDevicesDatabase = femaleDevicesDatabase.filter(d => d.deviceId !== deviceId);
     saveDevices();
-    res.json({ success: true });
+    res.json({ 
+        success: true, 
+        message: removed ? "Female contact removed" : "Contact not found",
+        removed 
+    });
 });
 
-// Health check endpoint
+// Health check
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ 
+        status: 'ok', 
+        females_tracked: femaleDevicesDatabase.length,
+        timestamp: new Date().toISOString() 
+    });
 });
 
-// WebSocket
+// WebSocket - Track ONLY female devices
 io.on('connection', (socket) => {
-    console.log('🟢 Client connected:', socket.id);
+    console.log('🟢 Scanner connected:', socket.id);
     
     socket.on('device-detected', async (data) => {
         const { deviceId, deviceName, distance, rssi } = data;
-        console.log(`📡 Device: ${deviceName}, Distance: ${distance}m`);
         
+        console.log(`📡 Scanning: ${deviceName || deviceId} at ${distance.toFixed(2)}m`);
+        
+        // ONLY process if within 10 meters
         if (distance <= 10) {
-            const deviceInfo = findPhoneByDeviceId(deviceId);
+            // Check if it's a female device
+            const femaleContact = findFemaleByDeviceId(deviceId);
             
-            const detection = {
-                deviceId,
-                deviceName: deviceInfo?.deviceName || deviceName,
-                phoneNumber: deviceInfo?.phoneNumber || 'Unknown',
-                ownerName: deviceInfo?.ownerName || 'Unknown',
-                gender: deviceInfo?.gender || 'unknown',
-                distance,
-                rssi,
-                timestamp: new Date().toISOString(),
-                within10Meters: true
-            };
-            
-            io.emit('detection-update', detection);
-            
-            if (deviceInfo?.gender === 'female') {
-                const message = `Habari ${deviceInfo.ownerName}! Umeonekana umbali wa ${distance.toFixed(1)}m.`;
-                await sendSMS(deviceInfo.phoneNumber, message);
-                io.emit('notification', { phoneNumber: deviceInfo.phoneNumber, message, distance });
+            if (femaleContact) {
+                console.log(`✅ FEMALE DETECTED: ${femaleContact.ownerName} at ${distance.toFixed(2)}m`);
+                
+                // Prepare detection data
+                const detection = {
+                    deviceId: femaleContact.deviceId,
+                    deviceName: femaleContact.deviceName,
+                    phoneNumber: femaleContact.phoneNumber,
+                    ownerName: femaleContact.ownerName,
+                    gender: "female",
+                    distance: distance,
+                    rssi: rssi,
+                    timestamp: new Date().toISOString(),
+                    within10Meters: true
+                };
+                
+                // Broadcast to all connected clients
+                io.emit('female-detected', detection);
+                
+                // Auto-send notification (optional - uncomment if needed)
+                // await sendSMSToFemale(femaleContact.phoneNumber, femaleContact.ownerName, distance);
+                
+                console.log(`👩 Sent update for: ${femaleContact.ownerName} (${femaleContact.phoneNumber})`);
+            } else {
+                console.log(`⚠️ Device ${deviceId} not in female database - IGNORED`);
+                io.emit('unknown-device', {
+                    deviceId,
+                    deviceName,
+                    distance,
+                    message: "Device not registered as female. Add to database first."
+                });
             }
+        } else {
+            console.log(`📏 Device at ${distance.toFixed(2)}m - outside 10m range, ignoring...`);
         }
     });
     
-    socket.on('send-sms', async (data) => {
-        const result = await sendSMS(data.phoneNumber, data.message);
+    // Manual communication with detected females
+    socket.on('send-sms-to-female', async (data) => {
+        const { phoneNumber, ownerName, distance } = data;
+        const result = await sendSMSToFemale(phoneNumber, ownerName, distance);
         socket.emit('sms-result', result);
     });
     
-    socket.on('make-call', async (data) => {
-        const result = await makeCall(data.phoneNumber, data.message);
+    socket.on('call-female', async (data) => {
+        const { phoneNumber, ownerName, distance } = data;
+        const result = await callFemale(phoneNumber, ownerName, distance);
         socket.emit('call-result', result);
     });
     
     socket.on('disconnect', () => {
-        console.log('🔴 Client disconnected:', socket.id);
+        console.log('🔴 Scanner disconnected:', socket.id);
     });
 });
 
-// Load database and start server
+// Initialize and start
 loadDevices();
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
-    console.log(`✅ Health check: http://0.0.0.0:${PORT}/health`);
+    console.log(`🚀 Phone Tracker (Female Only) running on http://0.0.0.0:${PORT}`);
+    console.log(`👩 Tracking ${femaleDevicesDatabase.length} female contacts`);
+    console.log(`✅ Health: http://0.0.0.0:${PORT}/health`);
 });
