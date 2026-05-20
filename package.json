@@ -1,7 +1,7 @@
 {
-  "name": "super-female-phone-tracker",
-  "version": "2.0.0",
-  "description": "Super advanced female phone tracker within 10 meters",
+  "name": "female-chat-system",
+  "version": "3.0.0",
+  "description": "Complete chat system with calls for females within 10m",
   "main": "server.js",
   "engines": {
     "node": "16.x",
