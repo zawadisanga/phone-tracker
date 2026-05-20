@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Female Contacts - Direct Communication</title>
+    <title>Auto Female Detector - Auto Adds Females</title>
     <style>
         * {
             margin: 0;
@@ -17,7 +17,7 @@
             min-height: 100vh;
         }
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
         }
         .header {
@@ -38,6 +38,52 @@
             border-bottom: 2px solid #e9ecef;
             padding-bottom: 10px;
         }
+        .status-badge {
+            background: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-block;
+        }
+        .scan-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-sms {
+            background: #17a2b8;
+            color: white;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        .btn-call {
+            background: #28a745;
+            color: white;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
         .female-list {
             max-height: 400px;
             overflow-y: auto;
@@ -50,69 +96,90 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: all 0.3s ease;
+            border-left: 4px solid #e83e8c;
         }
-        .female-item:hover {
-            background: #e9ecef;
-            transform: translateX(5px);
+        .female-item.auto-added {
+            border-left-color: #28a745;
+            background: #f0fff4;
         }
         .female-info h3 {
             color: #e83e8c;
             margin-bottom: 5px;
         }
-        .female-info p {
-            color: #666;
-            font-size: 14px;
+        .auto-badge {
+            background: #28a745;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
         }
         .female-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
-        button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
+        .distance-indicator {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
         }
-        .btn-sms {
-            background: #17a2b8;
-            color: white;
+        .live-feed {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
         }
-        .btn-call {
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
             background: #28a745;
             color: white;
-        }
-        .btn-delete {
-            background: #dc3545;
-            color: white;
-        }
-        .btn-add {
-            background: #28a745;
-            color: white;
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-        }
-        input, textarea {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
             border-radius: 8px;
-            font-size: 14px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
         }
-        .status {
-            background: #e8f4f8;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            text-align: center;
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
         .online {
             color: #28a745;
             font-weight: bold;
+        }
+        .offline {
+            color: #dc3545;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
         }
         .modal {
             display: none;
@@ -136,72 +203,62 @@
             width: 90%;
             max-width: 400px;
         }
-        .modal-content h3 {
-            margin-bottom: 15px;
-        }
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .modal-buttons button {
-            flex: 1;
-        }
-        .notification {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            background: #28a745;
-            color: white;
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
             border-radius: 8px;
-            z-index: 1000;
-            animation: slideIn 0.3s ease;
-        }
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #999;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>👩 Female Contacts</h1>
-            <p>Wasiliana moja kwa moja na wanawake walio karibu nawe</p>
+            <h1>✨ Auto Female Detector</h1>
+            <p>System inawaongeza WANAWAKE AUTOMATICALLY wanapogunduliwa</p>
         </div>
 
         <div class="card">
-            <h2>📊 Status</h2>
-            <div class="status" id="serverStatus">
-                Inaangalia server...
+            <h2>📡 Bluetooth Scanner</h2>
+            <div class="scan-controls">
+                <button id="startScanBtn" class="btn-primary">🔍 Anza Utafutaji</button>
+                <button id="stopScanBtn" class="btn-secondary" disabled>⏹️ Simamisha</button>
+            </div>
+            <div id="scanStatus" class="status-badge">⚪ Hajajaanza</div>
+            <div id="distanceInfo" style="margin-top: 10px; color: #666;"></div>
+        </div>
+
+        <div class="card">
+            <h2>📊 Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalFemales">0</div>
+                    <div class="stat-label">Wanawake Walioongezwa</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="autoAdded">0</div>
+                    <div class="stat-label">Walioungizwa Kiotomatiki</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="femaleNames">0</div>
+                    <div class="stat-label">Majina ya Kike Kwenye System</div>
+                </div>
             </div>
         </div>
 
         <div class="card">
-            <h2>👩 Orodha ya Wanawake (Karibu nawe)</h2>
+            <h2>👩 Wanawake Waliogunduliwa <span id="autoBadge" class="status-badge" style="background: #28a745; font-size: 10px;">✨ Auto-Add Active</span></h2>
             <div id="femaleList" class="female-list">
-                <div class="empty-state">Loading...</div>
+                <div style="text-align: center; padding: 40px; color: #999;">📭 Hakuna wanawake bado. Anza utafutaji!</div>
             </div>
         </div>
 
         <div class="card">
-            <h2>➕ Ongeza Mwanamke Mpya</h2>
-            <input type="text" id="newName" placeholder="Jina Kamili (mf: Fatma Hassan)">
-            <input type="tel" id="newPhone" placeholder="Namba ya Simu (mf: +255712345678)">
-            <input type="text" id="newDeviceId" placeholder="Device ID (optional)">
-            <button id="addBtn" class="btn-add">➕ Ongeza Mwanamke</button>
+            <h2>📡 Live Detection Feed</h2>
+            <div id="liveFeed" class="live-feed">
+                Waiting for devices...
+            </div>
         </div>
     </div>
 
@@ -211,24 +268,9 @@
             <h3>📨 Tuma SMS</h3>
             <p><strong>Kwa:</strong> <span id="smsToName"></span></p>
             <p><strong>Namba:</strong> <span id="smsToPhone"></span></p>
-            <textarea id="smsMessage" rows="4" placeholder="Andika ujumbe wako hapa..."></textarea>
-            <div class="modal-buttons">
-                <button id="sendSmsBtn" style="background: #17a2b8; color: white;">Tuma SMS</button>
-                <button id="closeSmsModal" style="background: #6c757d; color: white;">Funga</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Call Modal -->
-    <div id="callModal" class="modal">
-        <div class="modal-content">
-            <h3>📞 Piga Simu</h3>
-            <p><strong>Kwa:</strong> <span id="callToName"></span></p>
-            <p><strong>Namba:</strong> <span id="callToPhone"></span></p>
-            <div class="modal-buttons">
-                <button id="makeCallBtn" style="background: #28a745; color: white;">Piga Simu</button>
-                <button id="closeCallModal" style="background: #6c757d; color: white;">Funga</button>
-            </div>
+            <textarea id="smsMessage" rows="4" placeholder="Andika ujumbe wako..."></textarea>
+            <button id="sendSmsBtn" style="background: #17a2b8; color: white; padding: 10px; width: 100%;">Tuma SMS</button>
+            <button id="closeSmsModal" style="background: #6c757d; color: white; padding: 10px; width: 100%; margin-top: 10px;">Funga</button>
         </div>
     </div>
 
@@ -237,143 +279,229 @@
         const socket = io();
         
         // DOM elements
+        const startScanBtn = document.getElementById('startScanBtn');
+        const stopScanBtn = document.getElementById('stopScanBtn');
+        const scanStatus = document.getElementById('scanStatus');
+        const distanceInfo = document.getElementById('distanceInfo');
         const femaleListDiv = document.getElementById('femaleList');
-        const serverStatus = document.getElementById('serverStatus');
-        const newName = document.getElementById('newName');
-        const newPhone = document.getElementById('newPhone');
-        const newDeviceId = document.getElementById('newDeviceId');
-        const addBtn = document.getElementById('addBtn');
+        const totalFemalesSpan = document.getElementById('totalFemales');
+        const autoAddedSpan = document.getElementById('autoAdded');
+        const femaleNamesSpan = document.getElementById('femaleNames');
+        const liveFeedDiv = document.getElementById('liveFeed');
         
-        // Modal elements
-        const smsModal = document.getElementById('smsModal');
-        const callModal = document.getElementById('callModal');
-        const smsToName = document.getElementById('smsToName');
-        const smsToPhone = document.getElementById('smsToPhone');
-        const callToName = document.getElementById('callToName');
-        const callToPhone = document.getElementById('callToPhone');
-        const smsMessage = document.getElementById('smsMessage');
+        let isScanning = false;
+        let scanner = null;
+        let detectedFemales = [];
         
-        let currentFemale = null;
-        
-        // Show notification
-        function showNotification(message, type = 'success') {
-            const notif = document.createElement('div');
-            notif.className = 'notification';
-            notif.style.background = type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8';
-            notif.textContent = message;
-            document.body.appendChild(notif);
-            setTimeout(() => notif.remove(), 3000);
+        // Bluetooth Scanner
+        class AutoBluetoothScanner {
+            constructor() {
+                this.device = null;
+                this.isScanning = false;
+                this.interval = null;
+            }
+            
+            calculateDistance(rssi) {
+                const txPower = -59;
+                const ratio = (txPower - rssi) / (10 * 2);
+                const distance = Math.pow(10, ratio);
+                return Math.min(50, Math.max(0.5, distance));
+            }
+            
+            async startScanning() {
+                if (!navigator.bluetooth) {
+                    addToLiveFeed('❌ Web Bluetooth haitumiki. Tumia Chrome au Edge!', 'error');
+                    return false;
+                }
+                
+                this.isScanning = true;
+                
+                try {
+                    addToLiveFeed('🔍 Scanning for devices...', 'info');
+                    this.device = await navigator.bluetooth.requestDevice({
+                        acceptAllDevices: true,
+                        optionalServices: ['generic_access']
+                    });
+                    
+                    if (!this.device) {
+                        return false;
+                    }
+                    
+                    await this.device.gatt.connect();
+                    addToLiveFeed(`✅ Connected to: ${this.device.name || this.device.id}`, 'success');
+                    
+                    if (this.device.watchAdvertisements) {
+                        await this.device.watchAdvertisements();
+                        
+                        this.device.addEventListener('advertisementreceived', (event) => {
+                            const rssi = event.rssi;
+                            const distance = this.calculateDistance(rssi);
+                            
+                            addToLiveFeed(`📡 ${this.device.name || 'Device'}: ${distance.toFixed(1)}m, RSSI: ${rssi}dBm`, 'info');
+                            
+                            socket.emit('device-detected', {
+                                deviceId: this.device.id,
+                                deviceName: this.device.name || 'Unknown Device',
+                                distance: distance,
+                                rssi: rssi
+                            });
+                        });
+                    } else {
+                        this.simulateScanning();
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    addToLiveFeed(`❌ Error: ${error.message}`, 'error');
+                    this.isScanning = false;
+                    return false;
+                }
+            }
+            
+            simulateScanning() {
+                let distance = 8;
+                let decreasing = true;
+                
+                this.interval = setInterval(() => {
+                    if (!this.isScanning) return;
+                    
+                    if (decreasing) {
+                        distance -= 0.5;
+                        if (distance <= 2) decreasing = false;
+                    } else {
+                        distance += 0.5;
+                        if (distance >= 15) decreasing = true;
+                    }
+                    
+                    const simulatedNames = ['Fatma iPhone', 'Aisha Phone', 'Mariam Device', 'Halima Phone', 'Zainab Device'];
+                    const randomName = simulatedNames[Math.floor(Math.random() * simulatedNames.length)];
+                    
+                    socket.emit('device-detected', {
+                        deviceId: 'SIM-' + Math.random().toString(36).substr(2, 8),
+                        deviceName: randomName,
+                        distance: distance,
+                        rssi: -59 - 20 * Math.log10(distance)
+                    });
+                }, 5000);
+            }
+            
+            stopScanning() {
+                this.isScanning = false;
+                if (this.interval) {
+                    clearInterval(this.interval);
+                }
+                if (this.device && this.device.gatt?.connected) {
+                    this.device.gatt.disconnect();
+                }
+            }
         }
         
-        // Load all females
+        function addToLiveFeed(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const colors = {
+                success: '#28a745',
+                error: '#dc3545',
+                info: '#17a2b8',
+                warning: '#ffc107'
+            };
+            const html = `<div style="color: ${colors[type] || '#333'}; padding: 4px 0; border-bottom: 1px solid #eee;">
+                [${time}] ${message}
+            </div>`;
+            liveFeedDiv.innerHTML = html + liveFeedDiv.innerHTML;
+            if (liveFeedDiv.children.length > 50) {
+                liveFeedDiv.removeChild(liveFeedDiv.lastChild);
+            }
+        }
+        
+        async function startScanning() {
+            if (isScanning) {
+                addToLiveFeed('Utafutaji tayari unaendelea', 'warning');
+                return;
+            }
+            
+            scanner = new AutoBluetoothScanner();
+            scanStatus.innerHTML = '🟢 Inatafuta...';
+            scanStatus.style.background = '#28a745';
+            startScanBtn.disabled = true;
+            stopScanBtn.disabled = false;
+            
+            const success = await scanner.startScanning();
+            if (success) {
+                isScanning = true;
+                addToLiveFeed('🚀 Utafutaji umeanza! System itawaongeza wanawake AUTOMATICALLY', 'success');
+            } else {
+                stopScanning();
+            }
+        }
+        
+        function stopScanning() {
+            if (scanner) {
+                scanner.stopScanning();
+            }
+            isScanning = false;
+            scanStatus.innerHTML = '⚪ Umesimama';
+            scanStatus.style.background = '#6c757d';
+            startScanBtn.disabled = false;
+            stopScanBtn.disabled = true;
+            addToLiveFeed('⏹️ Utafutaji umesimamishwa', 'info');
+        }
+        
         async function loadFemales() {
             try {
                 const response = await fetch('/api/females');
                 const data = await response.json();
                 
-                if (data.success && data.females.length > 0) {
-                    const females = data.females;
+                if (data.success) {
+                    detectedFemales = data.females;
+                    totalFemalesSpan.textContent = data.count;
+                    autoAddedSpan.textContent = data.females.filter(f => f.autoAdded).length;
                     
-                    if (females.length === 0) {
-                        femaleListDiv.innerHTML = `
-                            <div class="empty-state">
-                                📭 Hakuna wanawake kwenye database.<br>
-                                Ongeza mwanamke kwanza!
-                            </div>
-                        `;
+                    if (data.females.length === 0) {
+                        femaleListDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">📭 Hakuna wanawake bado. Subiri system iwaongeze AUTOMATICALLY!</div>';
                         return;
                     }
                     
-                    femaleListDiv.innerHTML = females.map(female => `
-                        <div class="female-item">
+                    femaleListDiv.innerHTML = data.females.map(female => `
+                        <div class="female-item ${female.autoAdded ? 'auto-added' : ''}">
                             <div class="female-info">
-                                <h3>👩 ${female.ownerName}</h3>
-                                <p>📞 ${female.phoneNumber}</p>
+                                <h3>
+                                    👩 ${female.ownerName}
+                                    ${female.autoAdded ? '<span class="auto-badge">✨ Auto-Added</span>' : ''}
+                                </h3>
+                                <p>📞 ${female.phoneNumber === 'PENDING_ADD_PHONE' ? '⚠️ Namba haijapatikana - Tafadhali ongeza' : female.phoneNumber}</p>
                                 <p>🆔 ${female.deviceId}</p>
-                                <p style="font-size: 12px; color: #999;">📅 ${new Date(female.registeredAt).toLocaleDateString()}</p>
+                                <div class="distance-indicator">📅 ${new Date(female.lastSeen || female.registeredAt).toLocaleString()}</div>
                             </div>
                             <div class="female-actions">
-                                <button class="btn-sms" onclick="openSMSModal('${female.ownerName}', '${female.phoneNumber}')">📨 SMS</button>
-                                <button class="btn-call" onclick="openCallModal('${female.ownerName}', '${female.phoneNumber}')">📞 Simu</button>
-                                <button class="btn-delete" onclick="deleteFemale('${female.deviceId}')">🗑️</button>
+                                <button class="btn-sms" onclick="openSMS('${female.ownerName}', '${female.phoneNumber}')">📨 SMS</button>
+                                <button class="btn-call" onclick="makeCall('${female.ownerName}', '${female.phoneNumber}')">📞 Simu</button>
                             </div>
                         </div>
                     `).join('');
-                } else {
-                    femaleListDiv.innerHTML = `
-                        <div class="empty-state">
-                            📭 Hakuna wanawake kwenye database.<br>
-                            Ongeza mwanamke kwanza!
-                        </div>
-                    `;
                 }
             } catch (error) {
                 console.error('Error loading females:', error);
-                femaleListDiv.innerHTML = '<div class="empty-state">❌ Kosa la kupakia data</div>';
             }
         }
         
-        // Add new female
-        async function addFemale() {
-            const name = newName.value.trim();
-            const phone = newPhone.value.trim();
-            const deviceId = newDeviceId.value.trim() || name.replace(/\s/g, '-').toUpperCase();
-            
-            if (!name || !phone) {
-                showNotification('Tafadhali jaza Jina na Namba ya Simu', 'error');
-                return;
-            }
-            
+        async function loadStats() {
             try {
-                const response = await fetch('/api/females', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        deviceId: deviceId,
-                        deviceName: name + "'s Phone",
-                        phoneNumber: phone,
-                        ownerName: name
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showNotification(`✅ ${name} ameongezwa kwenye database!`, 'success');
-                    newName.value = '';
-                    newPhone.value = '';
-                    newDeviceId.value = '';
-                    loadFemales();
-                } else {
-                    showNotification('Error: ' + result.error, 'error');
-                }
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                femaleNamesSpan.textContent = data.femaleNamesInDB;
             } catch (error) {
-                showNotification('Error adding female', 'error');
+                console.error('Error loading stats:', error);
             }
         }
         
-        // Delete female
-        window.deleteFemale = async (deviceId) => {
-            if (!confirm('Una uhakika unataka kumfuta mwanamke huyu?')) return;
-            
-            try {
-                const response = await fetch(`/api/females/${deviceId}`, {
-                    method: 'DELETE'
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showNotification('Mwanamke amefutwa!', 'success');
-                    loadFemales();
-                }
-            } catch (error) {
-                showNotification('Error deleting', 'error');
-            }
-        };
+        // SMS Functions
+        let currentFemale = null;
+        const smsModal = document.getElementById('smsModal');
+        const smsToName = document.getElementById('smsToName');
+        const smsToPhone = document.getElementById('smsToPhone');
+        const smsMessage = document.getElementById('smsMessage');
         
-        // Open SMS modal
-        window.openSMSModal = (name, phone) => {
+        window.openSMS = (name, phone) => {
             currentFemale = { name, phone };
             smsToName.textContent = name;
             smsToPhone.textContent = phone;
@@ -381,116 +509,84 @@
             smsModal.classList.add('active');
         };
         
-        // Open Call modal
-        window.openCallModal = (name, phone) => {
-            currentFemale = { name, phone };
-            callToName.textContent = name;
-            callToPhone.textContent = phone;
-            callModal.classList.add('active');
-        };
-        
-        // Send SMS
-        function sendSMS() {
-            const message = smsMessage.value.trim();
-            
-            if (!message) {
-                showNotification('Tafadhali andika ujumbe', 'error');
+        window.makeCall = (name, phone) => {
+            if (phone === 'PENDING_ADD_PHONE') {
+                addToLiveFeed(`⚠️ ${name} haina namba ya simu. Tafadhali ongeza namba yake kwenye database.`, 'warning');
                 return;
             }
-            
-            showNotification(`📨 Inatuma SMS kwa ${currentFemale.name}...`, 'info');
-            
+            addToLiveFeed(`📞 Inampigia simu ${name}...`, 'info');
+            socket.emit('call-female', { phoneNumber: phone, ownerName: name });
+        };
+        
+        function sendSMS() {
+            const message = smsMessage.value.trim();
+            if (!message) {
+                addToLiveFeed('Tafadhali andika ujumbe', 'error');
+                return;
+            }
+            addToLiveFeed(`📨 Inatuma SMS kwa ${currentFemale.name}...`, 'info');
             socket.emit('send-sms-to-female', {
                 phoneNumber: currentFemale.phone,
                 ownerName: currentFemale.name,
-                message: message,
-                distance: 5
+                message: message
             });
-            
             smsModal.classList.remove('active');
         }
         
-        // Make call
-        function makeCall() {
-            showNotification(`📞 Inampigia simu ${currentFemale.name}...`, 'info');
-            
-            socket.emit('call-female', {
-                phoneNumber: currentFemale.phone,
-                ownerName: currentFemale.name,
-                distance: 5
-            });
-            
-            callModal.classList.remove('active');
-        }
-        
-        // Check server status
-        async function checkServer() {
-            try {
-                const response = await fetch('/health');
-                const data = await response.json();
-                if (data.status === 'ok') {
-                    serverStatus.innerHTML = `
-                        ✅ Server Iko Online<br>
-                        👩 Wanawake wanaofuatiliwa: ${data.females_tracked}<br>
-                        🕐 ${new Date(data.timestamp).toLocaleString()}
-                    `;
-                } else {
-                    serverStatus.innerHTML = '❌ Server Iko Offline';
-                }
-            } catch (error) {
-                serverStatus.innerHTML = '❌ Haiwezi kuunganisha kwenye server. Hakikisha server imeanza.';
-            }
-        }
-        
         // Socket events
+        socket.on('female-auto-detected', (data) => {
+            addToLiveFeed(`✨ AUTO-ADDED: ${data.ownerName} (Umbali: ${data.distance?.toFixed(1)}m)`, 'success');
+            loadFemales();
+            loadStats();
+            
+            // Show notification
+            const notif = document.createElement('div');
+            notif.className = 'notification';
+            notif.innerHTML = `✨ ${data.ownerName} ameongezwa kiotomatiki!<br>📏 Umbali: ${data.distance?.toFixed(1)}m`;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 5000);
+        });
+        
+        socket.on('non-female-detected', (data) => {
+            addToLiveFeed(`⚠️ ${data.deviceName} - SI MWANAMKE, haikuongezwa`, 'warning');
+        });
+        
         socket.on('sms-result', (data) => {
             if (data.success) {
-                showNotification(`✅ SMS imetumwa kwa mafanikio!`, 'success');
+                addToLiveFeed(`✅ SMS imetumwa: ${data.message}`, 'success');
             } else {
-                showNotification(`❌ Kosa: ${data.error || 'SMS haikutumwa'}`, 'error');
+                addToLiveFeed(`❌ SMS haikutumwa: ${data.error}`, 'error');
             }
         });
         
         socket.on('call-result', (data) => {
             if (data.success) {
-                showNotification(`✅ Simu inapigwa! ${data.message || ''}`, 'success');
+                addToLiveFeed(`✅ ${data.message}`, 'success');
             } else {
-                showNotification(`❌ Kosa: ${data.error || 'Simu haikupigwa'}`, 'error');
+                addToLiveFeed(`❌ Simu haikupigwa: ${data.error}`, 'error');
             }
         });
         
-        // Modal close buttons
+        // Event listeners
+        startScanBtn.addEventListener('click', startScanning);
+        stopScanBtn.addEventListener('click', stopScanning);
+        document.getElementById('sendSmsBtn').addEventListener('click', sendSMS);
         document.getElementById('closeSmsModal').addEventListener('click', () => {
             smsModal.classList.remove('active');
         });
         
-        document.getElementById('closeCallModal').addEventListener('click', () => {
-            callModal.classList.remove('active');
-        });
-        
-        document.getElementById('sendSmsBtn').addEventListener('click', sendSMS);
-        document.getElementById('makeCallBtn').addEventListener('click', makeCall);
-        
-        addBtn.addEventListener('click', addFemale);
-        
-        // Close modal when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target === smsModal) smsModal.classList.remove('active');
-            if (e.target === callModal) callModal.classList.remove('active');
-        });
-        
         // Initial load
-        checkServer();
         loadFemales();
+        loadStats();
         
-        // Auto refresh every 5 seconds
+        // Auto refresh every 3 seconds
         setInterval(() => {
             loadFemales();
-            checkServer();
-        }, 5000);
+            loadStats();
+        }, 3000);
         
-        console.log('✅ Female Contacts System Ready!');
-        console.log('💡 Ongeza wanawake kwa mikono kwenye form');
+        addToLiveFeed('✅ System ready! Auto-add ENABLED - Wanawake wataongezwa kiotomatiki', 'success');
+        addToLiveFeed('💡 Bonyeza "Anza Utafutaji" kuanza', 'info');
     </script>
 </body>
 </html>
