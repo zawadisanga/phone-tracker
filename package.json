@@ -1,7 +1,7 @@
 {
   "name": "phone-tracker-10m",
   "version": "1.0.0",
-  "description": "Track phone numbers within 10 meters",
+  "description": "Track only female phone numbers within 10 meters",
   "main": "server.js",
   "engines": {
     "node": "18.x",
@@ -15,6 +15,7 @@
     "express": "^4.18.2",
     "socket.io": "^4.5.4",
     "dotenv": "^16.0.3",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "fs": "^0.0.1-security"
   }
 }
