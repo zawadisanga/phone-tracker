@@ -146,4 +146,233 @@ function updateFemaleDevices(device) {
     }
     
     if (femaleDevices.length === 0) {
-        femaleDevicesDiv.innerHTML = '<div class="empty-state"><span class="icon">👩</span><p>Hakuna wanawake waliogunduliwa ndani
+        femaleDevicesDiv.innerHTML = '<div class="empty-state"><span class="icon">👩</span><p>Hakuna wanawake waliogunduliwa ndani ya mita 10</p></div>';
+        return;
+    }
+    
+    femaleDevicesDiv.innerHTML = femaleDevices.map(device => `
+        <div class="device-card female">
+            <h3>👩 ${device.ownerName || device.deviceName}</h3>
+            <p><strong>📞 Phone:</strong> <span class="phone">${device.phoneNumber}</span></p>
+            <p><strong>📏 Distance:</strong> <span class="distance">${device.distance?.toFixed(1) || '?'} meters</span></p>
+            <p><strong>⏱️ Detected:</strong> ${new Date(device.timestamp).toLocaleTimeString()}</p>
+            <button onclick="copyPhone('${device.phoneNumber}')" class="btn btn-outline" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">📋 Copy Phone</button>
+        </div>
+    `).join('');
+}
+
+// Load and display device database
+async function loadDeviceDatabase() {
+    try {
+        const response = await fetch('/api/devices');
+        const devices = await response.json();
+        
+        if (devices.length === 0) {
+            deviceListDiv.innerHTML = '<p>Hakuna vifaa kwenye database.</p>';
+            return;
+        }
+        
+        deviceListDiv.innerHTML = devices.map(device => `
+            <div class="device-card ${device.gender === 'female' ? 'female' : ''}">
+                <h3>${device.deviceName || device.deviceId}</h3>
+                <p><strong>ID:</strong> ${device.deviceId}</p>
+                <p><strong>📞 Phone:</strong> ${device.phoneNumber}</p>
+                <p><strong>👤 Owner:</strong> ${device.ownerName}</p>
+                <p><strong>🚻 Gender:</strong> ${device.gender}</p>
+                <button onclick="deleteDevice('${device.deviceId}')" class="btn btn-secondary" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">🗑️ Delete</button>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading database:', error);
+    }
+}
+
+// Add new device
+async function addDevice() {
+    const deviceId = document.getElementById('newDeviceId').value;
+    const deviceName = document.getElementById('newDeviceName').value;
+    const phoneNumber = document.getElementById('newPhoneNumber').value;
+    const ownerName = document.getElementById('newOwnerName').value;
+    const gender = document.getElementById('newGender').value;
+    
+    if (!deviceId || !phoneNumber) {
+        showToast('Device ID na Phone Number zinahitajika', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/devices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId, deviceName, phoneNumber, ownerName, gender })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Kifaa kimeongezwa!', 'success');
+            document.getElementById('newDeviceId').value = '';
+            document.getElementById('newDeviceName').value = '';
+            document.getElementById('newPhoneNumber').value = '';
+            document.getElementById('newOwnerName').value = '';
+            loadDeviceDatabase();
+        } else {
+            showToast('Error: ' + result.error, 'error');
+        }
+    } catch (error) {
+        showToast('Error adding device', 'error');
+    }
+}
+
+// Delete device
+window.deleteDevice = async (deviceId) => {
+    if (!confirm('Una uhakika unataka kufuta kifaa hiki?')) return;
+    
+    try {
+        const response = await fetch(`/api/devices/${deviceId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Kifaa kimefutwa!', 'success');
+            loadDeviceDatabase();
+        }
+    } catch (error) {
+        showToast('Error deleting device', 'error');
+    }
+};
+
+// Copy phone number
+window.copyPhone = (phone) => {
+    navigator.clipboard.writeText(phone);
+    showToast(`Namba ${phone} imenakiliwa!`, 'success');
+};
+
+// Send SMS
+async function sendSMS() {
+    const phoneNumber = document.getElementById('commsPhone').value;
+    const message = document.getElementById('commsMessage').value;
+    
+    if (!phoneNumber || !message) {
+        showToast('Tafadhali jaza namba na ujumbe', 'error');
+        return;
+    }
+    
+    commsResult.innerHTML = 'Inatuma SMS...';
+    commsResult.className = 'comms-result';
+    
+    socket.emit('send-sms', { phoneNumber, message });
+}
+
+// Make call
+async function makeCall() {
+    const phoneNumber = document.getElementById('commsPhone').value;
+    const message = document.getElementById('commsMessage').value || 'Habari, hii ni simu kutoka kwa mfumo wa utambuzi wa vifaa.';
+    
+    if (!phoneNumber) {
+        showToast('Tafadhali ingiza namba ya simu', 'error');
+        return;
+    }
+    
+    commsResult.innerHTML = 'Inapiga simu...';
+    commsResult.className = 'comms-result';
+    
+    socket.emit('make-call', { phoneNumber, message });
+}
+
+// Show toast notification
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#ffc107'};
+        color: white;
+        border-radius: 8px;
+        z-index: 1000;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Socket event handlers
+socket.on('detection-update', (data) => {
+    console.log('Detection update:', data);
+    updateDetectedDevices(data);
+    
+    if (data.gender === 'female') {
+        updateFemaleDevices(data);
+    }
+});
+
+socket.on('unknown-device', (data) => {
+    updateDetectedDevices(data);
+    showToast(`Kifaa kipya kimegunduliwa: ${data.deviceName || data.deviceId}`, 'warning');
+});
+
+socket.on('notification', (data) => {
+    showToast(`📱 Notification kwa ${data.phoneNumber}: ${data.message}`, 'success');
+});
+
+socket.on('sms-result', (data) => {
+    if (data.success) {
+        commsResult.innerHTML = `✅ SMS imetumwa! SID: ${data.sid}`;
+        commsResult.className = 'comms-result success';
+    } else {
+        commsResult.innerHTML = `❌ Kosa: ${data.error}`;
+        commsResult.className = 'comms-result error';
+    }
+});
+
+socket.on('call-result', (data) => {
+    if (data.success) {
+        commsResult.innerHTML = `✅ Simu inapigwa! Call SID: ${data.callSid}`;
+        commsResult.className = 'comms-result success';
+    } else {
+        commsResult.innerHTML = `❌ Kosa: ${data.error}`;
+        commsResult.className = 'comms-result error';
+    }
+});
+
+// Event listeners
+startScanBtn.addEventListener('click', startScanning);
+stopScanBtn.addEventListener('click', stopScanning);
+showDbBtn.addEventListener('click', () => {
+    const isVisible = deviceDatabaseDiv.style.display === 'block';
+    deviceDatabaseDiv.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible) loadDeviceDatabase();
+});
+addDeviceBtn.addEventListener('click', addDevice);
+sendSmsBtn.addEventListener('click', sendSMS);
+makeCallBtn.addEventListener('click', makeCall);
+
+// Add CSS animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Initialize app
+initScanner();
+console.log('Phone Tracker App initialized - Tracking within 10 meters');
