@@ -265,3 +265,218 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
 });
+
+
+
+// server.js - mock version without Twilio
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+require('dotenv').config();
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+    cors: { origin: "*", methods: ["GET", "POST"] }
+});
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public'));
+
+// Mock functions - no Twilio required
+async function sendSMS(phoneNumber, message) {
+    console.log(`📱 [MOCK] SMS to ${phoneNumber}: ${message}`);
+    return { success: true, sid: 'mock-sms-' + Date.now() };
+}
+
+async function makeCall(phoneNumber, message) {
+    console.log(`📞 [MOCK] Call to ${phoneNumber}: ${message}`);
+    return { success: true, callSid: 'mock-call-' + Date.now() };
+}
+
+// Rest of your server.js code remains the same
+// Just remove the Twilio require and use these mock functions
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+});
+
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+    cors: { origin: "*", methods: ["GET", "POST"] }
+});
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public'));
+
+// Database path
+const DEVICES_DB_PATH = path.join(__dirname, 'data', 'devices.json');
+
+// Ensure data directory exists
+if (!fs.existsSync(path.join(__dirname, 'data'))) {
+    fs.mkdirSync(path.join(__dirname, 'data'));
+}
+
+// Load devices
+let devicesDatabase = [];
+function loadDevices() {
+    try {
+        if (fs.existsSync(DEVICES_DB_PATH)) {
+            const data = fs.readFileSync(DEVICES_DB_PATH, 'utf8');
+            devicesDatabase = JSON.parse(data);
+            console.log(`✅ Loaded ${devicesDatabase.length} devices`);
+        } else {
+            devicesDatabase = [
+                {
+                    deviceId: "test-device-1",
+                    deviceName: "Test iPhone",
+                    phoneNumber: "+255712345678",
+                    ownerName: "Fatma Test",
+                    gender: "female",
+                    registeredAt: new Date().toISOString()
+                }
+            ];
+            saveDevices();
+        }
+    } catch (error) {
+        console.error('Error loading devices:', error);
+        devicesDatabase = [];
+    }
+}
+
+function saveDevices() {
+    try {
+        fs.writeFileSync(DEVICES_DB_PATH, JSON.stringify(devicesDatabase, null, 2));
+        console.log('💾 Devices saved');
+    } catch (error) {
+        console.error('Error saving devices:', error);
+    }
+}
+
+function findPhoneByDeviceId(deviceId) {
+    return devicesDatabase.find(d => 
+        d.deviceId === deviceId || 
+        d.deviceName?.toLowerCase() === deviceId?.toLowerCase()
+    );
+}
+
+function addDevice(deviceId, deviceName, phoneNumber, ownerName, gender) {
+    const existingIndex = devicesDatabase.findIndex(d => d.deviceId === deviceId);
+    const deviceData = { deviceId, deviceName, phoneNumber, ownerName, gender, lastSeen: new Date().toISOString() };
+    
+    if (existingIndex >= 0) {
+        devicesDatabase[existingIndex] = { ...devicesDatabase[existingIndex], ...deviceData };
+    } else {
+        devicesDatabase.push(deviceData);
+    }
+    saveDevices();
+    return deviceData;
+}
+
+// Mock communication
+async function sendSMS(phoneNumber, message) {
+    console.log(`📱 SMS to ${phoneNumber}: ${message}`);
+    return { success: true, message: "SMS sent (mock)" };
+}
+
+async function makeCall(phoneNumber, message) {
+    console.log(`📞 Call to ${phoneNumber}: ${message}`);
+    return { success: true, message: "Call initiated (mock)" };
+}
+
+// API Routes
+app.get('/api/devices', (req, res) => {
+    res.json(devicesDatabase);
+});
+
+app.post('/api/devices', (req, res) => {
+    const { deviceId, deviceName, phoneNumber, ownerName, gender } = req.body;
+    if (!deviceId || !phoneNumber) {
+        return res.status(400).json({ error: 'deviceId and phoneNumber required' });
+    }
+    const device = addDevice(deviceId, deviceName, phoneNumber, ownerName, gender);
+    res.json({ success: true, device });
+});
+
+app.delete('/api/devices/:deviceId', (req, res) => {
+    const { deviceId } = req.params;
+    devicesDatabase = devicesDatabase.filter(d => d.deviceId !== deviceId);
+    saveDevices();
+    res.json({ success: true });
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// WebSocket
+io.on('connection', (socket) => {
+    console.log('🟢 Client connected:', socket.id);
+    
+    socket.on('device-detected', async (data) => {
+        const { deviceId, deviceName, distance, rssi } = data;
+        console.log(`📡 Device: ${deviceName}, Distance: ${distance}m`);
+        
+        if (distance <= 10) {
+            const deviceInfo = findPhoneByDeviceId(deviceId);
+            
+            const detection = {
+                deviceId,
+                deviceName: deviceInfo?.deviceName || deviceName,
+                phoneNumber: deviceInfo?.phoneNumber || 'Unknown',
+                ownerName: deviceInfo?.ownerName || 'Unknown',
+                gender: deviceInfo?.gender || 'unknown',
+                distance,
+                rssi,
+                timestamp: new Date().toISOString(),
+                within10Meters: true
+            };
+            
+            io.emit('detection-update', detection);
+            
+            if (deviceInfo?.gender === 'female') {
+                const message = `Habari ${deviceInfo.ownerName}! Umeonekana umbali wa ${distance.toFixed(1)}m.`;
+                await sendSMS(deviceInfo.phoneNumber, message);
+                io.emit('notification', { phoneNumber: deviceInfo.phoneNumber, message, distance });
+            }
+        }
+    });
+    
+    socket.on('send-sms', async (data) => {
+        const result = await sendSMS(data.phoneNumber, data.message);
+        socket.emit('sms-result', result);
+    });
+    
+    socket.on('make-call', async (data) => {
+        const result = await makeCall(data.phoneNumber, data.message);
+        socket.emit('call-result', result);
+    });
+    
+    socket.on('disconnect', () => {
+        console.log('🔴 Client disconnected:', socket.id);
+    });
+});
+
+// Load database and start server
+loadDevices();
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+    console.log(`✅ Health check: http://0.0.0.0:${PORT}/health`);
+});
