@@ -18,216 +18,609 @@ app.use(express.static('public'));
 // Database paths
 const DEVICES_DB_PATH = path.join(__dirname, 'data', 'devices.json');
 const FEMALE_NAMES_DB_PATH = path.join(__dirname, 'data', 'female_names.json');
+const LEARNING_DB_PATH = path.join(__dirname, 'data', 'learning_data.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(path.join(__dirname, 'data'))) {
     fs.mkdirSync(path.join(__dirname, 'data'));
 }
 
-// ==================== GENDER DETECTION SYSTEM ====================
+// ==================== SUPER ADVANCED GENDER DETECTION SYSTEM ====================
 
-class GenderDetector {
+class SuperGenderDetector {
     constructor() {
-        this.femaleNames = new Set();
-        this.maleNames = new Set();
+        this.femaleNamesSet = new Set();
+        this.maleNamesSet = new Set();
+        this.unknownNamesSet = new Set();
+        this.namePatterns = [];
+        this.suffixPatterns = [];
+        this.prefixPatterns = [];
+        this.learningData = [];
         this.cache = new Map();
-        this.loadNames();
-        console.log('🤖 Gender Detector Initialized');
+        
+        // Load databases
+        this.loadLocalDatabases();
+        
+        // Initialize patterns
+        this.initPatterns();
+        
+        // Start auto-learning
+        this.startAutoLearning();
+        
+        console.log('🤖 Super Gender Detector Initialized');
     }
     
-    loadNames() {
+    loadLocalDatabases() {
         try {
             if (fs.existsSync(FEMALE_NAMES_DB_PATH)) {
                 const data = JSON.parse(fs.readFileSync(FEMALE_NAMES_DB_PATH, 'utf8'));
-                this.femaleNames = new Set(data.femaleNames || []);
-                this.maleNames = new Set(data.maleNames || []);
-                console.log(`📚 Loaded ${this.femaleNames.size} female names`);
+                this.femaleNamesSet = new Set(data.femaleNames || []);
+                this.maleNamesSet = new Set(data.maleNames || []);
+                this.namePatterns = data.patterns || [];
+                console.log(`📚 Loaded ${this.femaleNamesSet.size} female names, ${this.maleNamesSet.size} male names`);
             } else {
+                // Initialize with Tanzanian names
                 this.initializeTanzanianNames();
             }
+            
+            if (fs.existsSync(LEARNING_DB_PATH)) {
+                this.learningData = JSON.parse(fs.readFileSync(LEARNING_DB_PATH, 'utf8'));
+                console.log(`🧠 Loaded ${this.learningData.length} learning records`);
+            }
         } catch (error) {
-            console.error('Error loading names:', error);
+            console.error('Error loading databases:', error);
             this.initializeTanzanianNames();
         }
     }
     
     initializeTanzanianNames() {
-        // Tanzanian female names
-        const femaleList = [
-            'fatma', 'aisha', 'mariam', 'zainab', 'halima', 'saada', 'asha',
-            'mwanahamisi', 'khadija', 'amina', 'rahma', 'nadia', 'sharifa',
-            'rehema', 'neema', 'upendo', 'subira', 'saumu', 'mwanaidi',
-            'hawa', 'mwanaisha', 'aziza', 'samia', 'tatu', 'pili', 'hodan',
-            'nasra', 'farida', 'zuhura', 'binti', 'mwana', 'safiya', 'rukiya',
-            'saida', 'asia', 'biubwa', 'chausiku', 'hadija', 'hajra',
-            'hidaya', 'husna', 'imani', 'inaya', 'jannat', 'kamilia',
-            'karima', 'khatija', 'latifa', 'layla', 'lina', 'lulu',
-            'maimuna', 'malaika', 'maryam', 'mawahib', 'mwanajuma',
-            'nabila', 'najma', 'noor', 'nura', 'rahma', 'ramla',
-            'sabah', 'safiya', 'sakina', 'salama', 'salma', 'samira',
-            'sanaa', 'sarah', 'selina', 'shakira', 'shamim', 'siti',
-            'sofia', 'suhaila', 'sumaiya', 'warda', 'waridi', 'yasmin',
-            'zahra', 'zakia', 'zawadi', 'zuhura'
+        // Comprehensive Tanzanian female names
+        const tanzanianFemaleNames = [
+            'fatma', 'aisha', 'mariam', 'zainab', 'halima', 'saada', 'asha', 'mwanahamisi',
+            'khadija', 'amina', 'rahma', 'nadia', 'sharifa', 'rehema', 'neema', 'upendo',
+            'subira', 'saumu', 'mwanaidi', 'hawa', 'mwanaisha', 'aziza', 'samia', 'tatu',
+            'pili', 'hodan', 'nasra', 'farida', 'zuhura', 'binti', 'mwana', 'safiya',
+            'rukiya', 'saida', 'asia', 'biubwa', 'chausiku', 'dada', 'faraj', 'fatma',
+            'hadija', 'hajra', 'hawaa', 'hidaya', 'husna', 'iltimas', 'imani', 'inaya',
+            'jannat', 'kamilia', 'karima', 'kashifa', 'khatija', 'kulthum', 'lailat',
+            'latifa', 'layla', 'lina', 'lulu', 'maimuna', 'malaika', 'maryam', 'mastura',
+            'mawahib', 'mbaraka', 'mke', 'moyo', 'mpenzi', 'mwanajuma', 'mwanakhamis',
+            'mwanakombo', 'mwanakweli', 'mwanamvita', 'mwananchi', 'mwanashamu', 'mwanaudi',
+            'mwanayusuf', 'nabila', 'najma', 'nargis', 'nashra', 'nayla', 'noor', 'nura',
+            'rahabi', 'rahma', 'rahmani', 'ramla', 'rana', 'rauda', 'raya', 'rayhana',
+            'ridhwan', 'ruqayya', 'sabah', 'sabra', 'sadaf', 'safiya', 'sahla', 'sakina',
+            'salama', 'salha', 'salma', 'samira', 'sanaa', 'sarah', 'sausan', 'sayyida',
+            'selina', 'shadya', 'shahira', 'shakira', 'shamim', 'sharifa', 'shawana',
+            'shukran', 'siti', 'sofia', 'subira', 'suhaila', 'sukaina', 'sumaiya', 'sunila',
+            'suraya', 'tabia', 'tahira', 'talatu', 'tamima', 'tamira', 'tatu', 'thani',
+            'thara', 'thawab', 'thuraya', 'tunu', 'upendo', 'warda', 'waridi', 'yasmin',
+            'zahra', 'zakia', 'zamda', 'zawadi', 'zubeda', 'zuhura', 'zuleikha', 'zulfa',
+            'mwanaidi', 'shani', 'tausi', 'dada', 'mama', 'bibi', 'nyanya', 'kaka'
         ];
         
-        // Tanzanian male names
-        const maleList = [
-            'juma', 'hassan', 'ali', 'mohamed', 'salim', 'hamza', 'idd',
-            'rashid', 'omar', 'saidi', 'bakari', 'ramadhan', 'kassim',
-            'khamis', 'ibrahim', 'yusuf', 'islam', 'abdallah', 'samwel',
-            'emanuel', 'john', 'peter', 'james', 'david', 'george',
-            'william', 'charles', 'paul', 'mark', 'steven', 'andrew',
-            'joseph', 'thomas', 'christopher', 'daniel', 'matthew',
-            'anthony', 'donald', 'michael', 'patrick', 'richard',
-            'ahmed', 'amir', 'anwar', 'ashraf', 'aziz', 'bashir',
-            'farid', 'faris', 'hakim', 'hamisi', 'haruna', 'hashim',
-            'husein', 'ismail', 'jabir', 'jamal', 'khalid', 'mahmoud',
-            'masoud', 'musa', 'mustafa', 'nassir', 'nuru', 'osman',
-            'saad', 'saeed', 'seif', 'shabani', 'suleiman', 'sultan',
-            'twaha', 'yahya', 'yohana', 'yusuph', 'zacharia', 'zakaria'
+        // Comprehensive Tanzanian male names
+        const tanzanianMaleNames = [
+            'juma', 'hassan', 'ali', 'mohamed', 'salim', 'hamza', 'idd', 'rashid', 'omar',
+            'saidi', 'bakari', 'ramadhan', 'kassim', 'khamis', 'ibrahim', 'yusuf', 'islam',
+            'abdallah', 'samwel', 'emanuel', 'john', 'peter', 'james', 'david', 'george',
+            'william', 'charles', 'paul', 'mark', 'steven', 'andrew', 'joseph', 'thomas',
+            'christopher', 'daniel', 'matthew', 'anthony', 'donald', 'jeffrey', 'kenneth',
+            'lawrence', 'michael', 'patrick', 'richard', 'robert', 'ronald', 'timothy',
+            'ahmed', 'amir', 'anwar', 'asad', 'ashraf', 'aziz', 'bashir', 'dawud', 'fahad',
+            'farid', 'faris', 'fazal', 'gulam', 'habib', 'hakim', 'hamisi', 'harith',
+            'haruna', 'hashim', 'hatibu', 'husein', 'ismail', 'jabir', 'jafari', 'jalal',
+            'jamal', 'juma', 'kassim', 'khalid', 'khamis', 'khatib', 'ladha', 'luti',
+            'maalim', 'mabruk', 'madin', 'mahmoud', 'makame', 'mansour', 'masoud', 'mbwana',
+            'mfaume', 'mgeni', 'mhina', 'mjahed', 'mkalama', 'mkubwa', 'mkuu', 'mnazi',
+            'mohamed', 'mosses', 'mourad', 'msafiri', 'mshale', 'mshenga', 'msonge', 'mtoro',
+            'mtumwa', 'muhidin', 'muhsin', 'mukhtar', 'mumo', 'mungu', 'munir', 'muriithi',
+            'musa', 'mustafa', 'muti', 'mutta', 'mwadini', 'mwaituka', 'mwana', 'mwanakweli',
+            'mwananchi', 'mwangata', 'mwanyambi', 'mwarabu', 'mweusi', 'mwinyi', 'nassir',
+            'nur', 'nuru', 'nyange', 'nyerere', 'osman', 'pili', 'ramadhani', 'ramazani',
+            'rashidi', 'saad', 'sabri', 'saeed', 'saidi', 'sakina', 'salama', 'salim',
+            'samboja', 'samson', 'santos', 'seif', 'selah', 'shabani', 'shafii', 'shah',
+            'shariff', 'sheha', 'shekhan', 'shems', 'shemy', 'shewa', 'sibomana', 'sijaona',
+            'simai', 'simo', 'sudi', 'suleiman', 'sultan', 'sumaili', 'swebe', 'tumaini',
+            'tumbo', 'twaha', 'twalib', 'ubwa', 'urambo', 'waidi', 'wali', 'yahya', 'yakob',
+            'yalinde', 'yangwe', 'yohana', 'yusuph', 'zacharia', 'zahabu', 'zakaria', 'zamda',
+            'baba', 'mzee', 'kaka', 'ndugu', 'rafiki', 'jirani'
         ];
         
-        this.femaleNames = new Set(femaleList);
-        this.maleNames = new Set(maleList);
-        this.saveNames();
+        this.femaleNamesSet = new Set(tanzanianFemaleNames);
+        this.maleNamesSet = new Set(tanzanianMaleNames);
+        this.saveDatabases();
     }
     
-    saveNames() {
-        const data = {
-            femaleNames: Array.from(this.femaleNames),
-            maleNames: Array.from(this.maleNames),
-            updatedAt: new Date().toISOString()
-        };
-        fs.writeFileSync(FEMALE_NAMES_DB_PATH, JSON.stringify(data, null, 2));
+    initPatterns() {
+        this.suffixPatterns = [
+            { suffix: 'a', weight: 0.7, gender: 'female' },
+            { suffix: 'i', weight: 0.6, gender: 'female' },
+            { suffix: 'e', weight: 0.6, gender: 'male' },
+            { suffix: 'o', weight: 0.7, gender: 'male' },
+            { suffix: 'na', weight: 0.8, gender: 'female' },
+            { suffix: 'ma', weight: 0.7, gender: 'female' },
+            { suffix: 'tu', weight: 0.6, gender: 'female' },
+            { suffix: 'zi', weight: 0.6, gender: 'female' },
+            { suffix: 'li', weight: 0.7, gender: 'male' },
+            { suffix: 'di', weight: 0.7, gender: 'male' },
+            { suffix: 'ni', weight: 0.6, gender: 'female' },
+            { suffix: 'ra', weight: 0.8, gender: 'female' },
+            { suffix: 'ya', weight: 0.8, gender: 'female' },
+            { suffix: 'sa', weight: 0.6, gender: 'female' },
+            { suffix: 'za', weight: 0.6, gender: 'female' },
+            { suffix: 'ta', weight: 0.5, gender: 'female' },
+            { suffix: 'ka', weight: 0.5, gender: 'male' },
+            { suffix: 'zi', weight: 0.6, gender: 'female' }
+        ];
+        
+        this.prefixPatterns = [
+            { prefix: 'mwan', weight: 0.95, gender: 'female', meaning: 'child of' },
+            { prefix: 'binti', weight: 0.95, gender: 'female', meaning: 'daughter of' },
+            { prefix: 'siti', weight: 0.95, gender: 'female', meaning: 'lady' },
+            { prefix: 'haj', weight: 0.85, gender: 'female', meaning: 'pilgrim' },
+            { prefix: 'mama', weight: 0.98, gender: 'female', meaning: 'mother' },
+            { prefix: 'bibi', weight: 0.98, gender: 'female', meaning: 'grandmother' },
+            { prefix: 'dada', weight: 0.95, gender: 'female', meaning: 'sister' },
+            { prefix: 'mke', weight: 0.95, gender: 'female', meaning: 'wife' }
+        ];
+        
+        this.namePatterns = [
+            { text: 'fatma', weight: 0.98, gender: 'female' },
+            { text: 'aisha', weight: 0.98, gender: 'female' },
+            { text: 'mariam', weight: 0.98, gender: 'female' },
+            { text: 'zainab', weight: 0.98, gender: 'female' },
+            { text: 'halima', weight: 0.97, gender: 'female' },
+            { text: 'juma', weight: 0.98, gender: 'male' },
+            { text: 'hassan', weight: 0.98, gender: 'male' },
+            { text: 'ali', weight: 0.98, gender: 'male' },
+            { text: 'mohamed', weight: 0.98, gender: 'male' }
+        ];
     }
     
-    detectGender(name) {
-        if (!name || name === 'Unknown' || name === 'undefined') {
-            return { gender: 'unknown', confidence: 0, method: 'none' };
+    detectGender(name, phoneNumber = null, deviceId = null) {
+        if (!name || name === 'Unknown' || name === 'undefined' || name === 'null') {
+            return this.getUnknownResult();
         }
         
+        // Check cache first
+        const cacheKey = name.toLowerCase().trim();
+        if (this.cache.has(cacheKey)) {
+            const cached = this.cache.get(cacheKey);
+            if (Date.now() - cached.timestamp < 86400000) {
+                return cached.result;
+            }
+        }
+        
+        let results = [];
+        
+        // Method 1: Local database check
+        const localResult = this.checkLocalDatabase(name);
+        results.push(localResult);
+        
+        // Method 2: Pattern matching
+        const patternResult = this.checkPatterns(name);
+        results.push(patternResult);
+        
+        // Method 3: Name suffix analysis
+        const suffixResult = this.checkSuffix(name);
+        results.push(suffixResult);
+        
+        // Method 4: Name prefix analysis
+        const prefixResult = this.checkPrefix(name);
+        results.push(prefixResult);
+        
+        // Method 5: Machine learning from learning data
+        const mlResult = this.checkMachineLearning(name);
+        results.push(mlResult);
+        
+        // Method 6: Cross-reference with known names
+        const crossRefResult = this.crossReferenceWithKnownNames(name);
+        results.push(crossRefResult);
+        
+        // Method 7: Statistical analysis
+        const statsResult = this.statisticalAnalysis(name);
+        results.push(statsResult);
+        
+        // Aggregate results with weights
+        const finalResult = this.aggregateResults(results);
+        
+        // Cache the result
+        this.cache.set(cacheKey, {
+            result: finalResult,
+            timestamp: Date.now()
+        });
+        
+        // Save for learning
+        this.saveForLearning(name, finalResult);
+        
+        return finalResult;
+    }
+    
+    checkLocalDatabase(name) {
         const lowerName = name.toLowerCase().trim();
         
-        // Check cache
-        if (this.cache.has(lowerName)) {
-            return this.cache.get(lowerName);
+        if (this.femaleNamesSet.has(lowerName)) {
+            return { gender: 'female', method: 'local_db', confidence: 0.98, weight: 1.0 };
+        }
+        if (this.maleNamesSet.has(lowerName)) {
+            return { gender: 'male', method: 'local_db', confidence: 0.98, weight: 1.0 };
         }
         
-        let result = { gender: 'unknown', confidence: 0, methods: [] };
-        
-        // Method 1: Direct database match
-        if (this.femaleNames.has(lowerName)) {
-            result = { gender: 'female', confidence: 0.98, method: 'database', methods: ['database'] };
-        } 
-        else if (this.maleNames.has(lowerName)) {
-            result = { gender: 'male', confidence: 0.98, method: 'database', methods: ['database'] };
-        }
-        // Method 2: Partial match
-        else {
-            for (let femaleName of this.femaleNames) {
-                if (lowerName.includes(femaleName) || femaleName.includes(lowerName)) {
-                    result = { gender: 'female', confidence: 0.85, method: 'partial', methods: ['partial_match'] };
-                    break;
-                }
-            }
-            
-            if (result.gender === 'unknown') {
-                for (let maleName of this.maleNames) {
-                    if (lowerName.includes(maleName) || maleName.includes(lowerName)) {
-                        result = { gender: 'male', confidence: 0.85, method: 'partial', methods: ['partial_match'] };
-                        break;
-                    }
-                }
+        // Check for partial matches
+        for (let femaleName of this.femaleNamesSet) {
+            if (lowerName.includes(femaleName) || femaleName.includes(lowerName)) {
+                return { gender: 'female', method: 'local_db_partial', confidence: 0.85, weight: 0.9 };
             }
         }
         
-        // Method 3: Name ending analysis
-        if (result.gender === 'unknown') {
-            if (lowerName.endsWith('a') || lowerName.endsWith('i')) {
-                result = { gender: 'female', confidence: 0.65, method: 'ending', methods: ['name_ending'] };
-            } 
-            else if (lowerName.endsWith('e') || lowerName.endsWith('o')) {
-                result = { gender: 'male', confidence: 0.65, method: 'ending', methods: ['name_ending'] };
+        for (let maleName of this.maleNamesSet) {
+            if (lowerName.includes(maleName) || maleName.includes(lowerName)) {
+                return { gender: 'male', method: 'local_db_partial', confidence: 0.85, weight: 0.9 };
             }
         }
         
-        // Method 4: Prefix analysis
-        if (result.gender === 'unknown') {
-            if (lowerName.startsWith('mwan') || lowerName.startsWith('binti')) {
-                result = { gender: 'female', confidence: 0.90, method: 'prefix', methods: ['prefix'] };
-            }
-        }
-        
-        // Cache result
-        this.cache.set(lowerName, result);
-        
-        // Auto-learn if confidence is high
-        if (result.confidence > 0.8 && result.gender !== 'unknown') {
-            this.addToLearning(lowerName, result.gender);
-        }
-        
-        return result;
+        return { gender: 'unknown', method: 'local_db', confidence: 0, weight: 0 };
     }
     
-    addToLearning(name, gender) {
-        if (gender === 'female' && !this.femaleNames.has(name)) {
-            this.femaleNames.add(name);
-            this.saveNames();
-            console.log(`📚 Learned new female name: ${name}`);
-        } else if (gender === 'male' && !this.maleNames.has(name)) {
-            this.maleNames.add(name);
-            this.saveNames();
-            console.log(`📚 Learned new male name: ${name}`);
+    checkPatterns(name) {
+        const lowerName = name.toLowerCase();
+        let femaleScore = 0;
+        let maleScore = 0;
+        
+        for (let pattern of this.namePatterns) {
+            if (lowerName.includes(pattern.text)) {
+                if (pattern.gender === 'female') femaleScore += pattern.weight;
+                else maleScore += pattern.weight;
+            }
         }
+        
+        if (femaleScore > maleScore && femaleScore > 0.5) {
+            return { gender: 'female', method: 'pattern_match', confidence: Math.min(0.9, femaleScore), weight: 0.85 };
+        } else if (maleScore > femaleScore && maleScore > 0.5) {
+            return { gender: 'male', method: 'pattern_match', confidence: Math.min(0.9, maleScore), weight: 0.85 };
+        }
+        
+        return { gender: 'unknown', method: 'pattern_match', confidence: 0, weight: 0 };
+    }
+    
+    checkSuffix(name) {
+        const lowerName = name.toLowerCase();
+        let bestMatch = { gender: 'unknown', confidence: 0 };
+        
+        for (let pattern of this.suffixPatterns) {
+            if (lowerName.endsWith(pattern.suffix)) {
+                if (pattern.weight > bestMatch.confidence) {
+                    bestMatch = {
+                        gender: pattern.gender,
+                        confidence: pattern.weight,
+                        suffix: pattern.suffix
+                    };
+                }
+            }
+        }
+        
+        if (bestMatch.confidence > 0) {
+            return {
+                gender: bestMatch.gender,
+                method: 'suffix_analysis',
+                confidence: bestMatch.confidence,
+                weight: 0.7,
+                details: `ends with '${bestMatch.suffix}'`
+            };
+        }
+        
+        return { gender: 'unknown', method: 'suffix_analysis', confidence: 0, weight: 0 };
+    }
+    
+    checkPrefix(name) {
+        const lowerName = name.toLowerCase();
+        let bestMatch = { gender: 'unknown', confidence: 0 };
+        
+        for (let pattern of this.prefixPatterns) {
+            if (lowerName.startsWith(pattern.prefix)) {
+                if (pattern.weight > bestMatch.confidence) {
+                    bestMatch = {
+                        gender: pattern.gender,
+                        confidence: pattern.weight,
+                        prefix: pattern.prefix,
+                        meaning: pattern.meaning
+                    };
+                }
+            }
+        }
+        
+        if (bestMatch.confidence > 0) {
+            return {
+                gender: bestMatch.gender,
+                method: 'prefix_analysis',
+                confidence: bestMatch.confidence,
+                weight: 0.85,
+                details: `starts with '${bestMatch.prefix}' (${bestMatch.meaning})`
+            };
+        }
+        
+        return { gender: 'unknown', method: 'prefix_analysis', confidence: 0, weight: 0 };
+    }
+    
+    checkMachineLearning(name) {
+        if (this.learningData.length === 0) {
+            return { gender: 'unknown', method: 'machine_learning', confidence: 0, weight: 0 };
+        }
+        
+        const lowerName = name.toLowerCase();
+        let similarNames = [];
+        
+        for (let record of this.learningData) {
+            if (record.name && record.name.toLowerCase().includes(lowerName)) {
+                similarNames.push(record);
+            }
+        }
+        
+        if (similarNames.length > 0) {
+            let femaleCount = similarNames.filter(n => n.gender === 'female').length;
+            let maleCount = similarNames.filter(n => n.gender === 'male').length;
+            
+            if (femaleCount > maleCount) {
+                return {
+                    gender: 'female',
+                    method: 'machine_learning',
+                    confidence: Math.min(0.9, femaleCount / similarNames.length),
+                    weight: 0.85,
+                    samples: similarNames.length
+                };
+            } else if (maleCount > femaleCount) {
+                return {
+                    gender: 'male',
+                    method: 'machine_learning',
+                    confidence: Math.min(0.9, maleCount / similarNames.length),
+                    weight: 0.85,
+                    samples: similarNames.length
+                };
+            }
+        }
+        
+        return { gender: 'unknown', method: 'machine_learning', confidence: 0, weight: 0 };
+    }
+    
+    crossReferenceWithKnownNames(name) {
+        const commonFemalePrefixes = ['mari', 'fati', 'aish', 'zain', 'hal', 'sa', 'rahm', 'nadi', 'shar', 'reh', 'neem', 'upend'];
+        const commonMalePrefixes = ['juma', 'hass', 'moha', 'sali', 'rash', 'omar', 'said', 'bak', 'rama', 'kass', 'kham', 'ibra'];
+        
+        const lowerName = name.toLowerCase();
+        let femaleScore = 0;
+        let maleScore = 0;
+        
+        for (let prefix of commonFemalePrefixes) {
+            if (lowerName.startsWith(prefix)) femaleScore += 0.3;
+            if (lowerName.includes(prefix)) femaleScore += 0.2;
+        }
+        
+        for (let prefix of commonMalePrefixes) {
+            if (lowerName.startsWith(prefix)) maleScore += 0.3;
+            if (lowerName.includes(prefix)) maleScore += 0.2;
+        }
+        
+        if (femaleScore > maleScore && femaleScore > 0.5) {
+            return { gender: 'female', method: 'cross_reference', confidence: Math.min(0.85, femaleScore), weight: 0.75 };
+        } else if (maleScore > femaleScore && maleScore > 0.5) {
+            return { gender: 'male', method: 'cross_reference', confidence: Math.min(0.85, maleScore), weight: 0.75 };
+        }
+        
+        return { gender: 'unknown', method: 'cross_reference', confidence: 0, weight: 0 };
+    }
+    
+    statisticalAnalysis(name) {
+        const vowelCount = (name.match(/[aeiou]/gi) || []).length;
+        const vowelRatio = vowelCount / name.length;
+        
+        if (vowelRatio > 0.5 && name.length > 3) {
+            return { gender: 'female', method: 'statistical', confidence: 0.55, weight: 0.6 };
+        } else if (vowelRatio < 0.3 && name.length > 3) {
+            return { gender: 'male', method: 'statistical', confidence: 0.55, weight: 0.6 };
+        }
+        
+        return { gender: 'unknown', method: 'statistical', confidence: 0, weight: 0 };
+    }
+    
+    aggregateResults(results) {
+        let femaleWeightSum = 0;
+        let maleWeightSum = 0;
+        let totalWeight = 0;
+        let methods = [];
+        
+        for (let result of results) {
+            if (result.gender === 'female') {
+                femaleWeightSum += result.confidence * result.weight;
+                totalWeight += result.weight;
+                methods.push({ method: result.method, confidence: result.confidence });
+            } else if (result.gender === 'male') {
+                maleWeightSum += result.confidence * result.weight;
+                totalWeight += result.weight;
+                methods.push({ method: result.method, confidence: result.confidence });
+            }
+        }
+        
+        if (totalWeight === 0) {
+            return this.getUnknownResult();
+        }
+        
+        const femaleScore = femaleWeightSum / totalWeight;
+        const maleScore = maleWeightSum / totalWeight;
+        
+        if (femaleScore > maleScore && femaleScore > 0.6) {
+            return {
+                gender: 'female',
+                confidence: femaleScore,
+                methods: methods,
+                finalScore: femaleScore
+            };
+        } else if (maleScore > femaleScore && maleScore > 0.6) {
+            return {
+                gender: 'male',
+                confidence: maleScore,
+                methods: methods,
+                finalScore: maleScore
+            };
+        }
+        
+        return this.getUnknownResult();
+    }
+    
+    getUnknownResult() {
+        return {
+            gender: 'unknown',
+            confidence: 0,
+            methods: [],
+            finalScore: 0
+        };
+    }
+    
+    saveForLearning(name, result) {
+        if (result.gender !== 'unknown' && result.confidence > 0.7) {
+            this.learningData.push({
+                name: name.toLowerCase(),
+                gender: result.gender,
+                confidence: result.confidence,
+                timestamp: Date.now(),
+                methods: result.methods
+            });
+            
+            if (this.learningData.length > 10000) {
+                this.learningData = this.learningData.slice(-10000);
+            }
+            
+            this.saveLearningData();
+            
+            // Auto-add to names set
+            if (result.gender === 'female') {
+                this.femaleNamesSet.add(name.toLowerCase());
+            } else if (result.gender === 'male') {
+                this.maleNamesSet.add(name.toLowerCase());
+            }
+            this.saveDatabases();
+        }
+    }
+    
+    startAutoLearning() {
+        setInterval(() => {
+            this.autoLearnFromDetections();
+        }, 3600000);
+    }
+    
+    autoLearnFromDetections() {
+        console.log('🧠 Auto-learning from recent detections...');
+        const recentData = this.learningData.slice(-100);
+        
+        for (let record of recentData) {
+            if (record.gender === 'female') {
+                this.femaleNamesSet.add(record.name);
+            } else if (record.gender === 'male') {
+                this.maleNamesSet.add(record.name);
+            }
+        }
+        
+        this.saveDatabases();
+        console.log(`📚 Auto-learned: ${this.femaleNamesSet.size} female, ${this.maleNamesSet.size} male names`);
+    }
+    
+    saveDatabases() {
+        const femaleNamesData = {
+            femaleNames: Array.from(this.femaleNamesSet),
+            maleNames: Array.from(this.maleNamesSet),
+            patterns: this.namePatterns,
+            updatedAt: new Date().toISOString()
+        };
+        fs.writeFileSync(FEMALE_NAMES_DB_PATH, JSON.stringify(femaleNamesData, null, 2));
+    }
+    
+    saveLearningData() {
+        fs.writeFileSync(LEARNING_DB_PATH, JSON.stringify(this.learningData, null, 2));
     }
     
     addFemaleName(name) {
-        this.femaleNames.add(name.toLowerCase());
-        this.saveNames();
+        this.femaleNamesSet.add(name.toLowerCase());
+        this.saveDatabases();
         console.log(`✅ Added female name: ${name}`);
+    }
+    
+    addMaleName(name) {
+        this.maleNamesSet.add(name.toLowerCase());
+        this.saveDatabases();
+        console.log(`✅ Added male name: ${name}`);
+    }
+    
+    getStats() {
+        return {
+            femaleNames: this.femaleNamesSet.size,
+            maleNames: this.maleNamesSet.size,
+            learningData: this.learningData.length,
+            cacheSize: this.cache.size
+        };
     }
 }
 
-// Initialize detector
-const detector = new GenderDetector();
+// Initialize the super gender detector
+const genderDetector = new SuperGenderDetector();
 
-// ==================== DATABASE ====================
+// ==================== DATABASE MANAGEMENT ====================
 
-let femaleDevices = [];
+let femaleDevicesDatabase = [];
 
 function loadDevices() {
     try {
         if (fs.existsSync(DEVICES_DB_PATH)) {
             const data = fs.readFileSync(DEVICES_DB_PATH, 'utf8');
-            femaleDevices = JSON.parse(data);
-            console.log(`✅ Loaded ${femaleDevices.length} female contacts`);
+            femaleDevicesDatabase = JSON.parse(data);
+            console.log(`✅ Loaded ${femaleDevicesDatabase.length} female contacts`);
         } else {
-            // Sample female contacts
-            femaleDevices = [
+            femaleDevicesDatabase = [
                 {
-                    deviceId: "FATMA-001",
-                    deviceName: "Fatma's Phone",
+                    deviceId: "FATMA-PHONE-001",
+                    deviceName: "Fatma's iPhone",
                     phoneNumber: "+255712345678",
                     ownerName: "Fatma Hassan",
                     gender: "female",
+                    confidence: 0.98,
                     registeredAt: new Date().toISOString(),
                     lastSeen: new Date().toISOString()
                 },
                 {
-                    deviceId: "AISHA-002",
-                    deviceName: "Aisha's Phone",
+                    deviceId: "AISHA-SAMSUNG-002",
+                    deviceName: "Aisha's Samsung",
                     phoneNumber: "+255765432109",
                     ownerName: "Aisha Juma",
                     gender: "female",
+                    confidence: 0.98,
                     registeredAt: new Date().toISOString(),
                     lastSeen: new Date().toISOString()
                 },
                 {
-                    deviceId: "MARIAM-003",
+                    deviceId: "MARIAM-HUAWEI-003",
                     deviceName: "Mariam's Phone",
                     phoneNumber: "+255756789012",
                     ownerName: "Mariam Salim",
                     gender: "female",
+                    confidence: 0.98,
+                    registeredAt: new Date().toISOString(),
+                    lastSeen: new Date().toISOString()
+                },
+                {
+                    deviceId: "ZAINAB-TECNO-004",
+                    deviceName: "Zainab's Tecno",
+                    phoneNumber: "+255767890123",
+                    ownerName: "Zainab Mohamed",
+                    gender: "female",
+                    confidence: 0.98,
+                    registeredAt: new Date().toISOString(),
+                    lastSeen: new Date().toISOString()
+                },
+                {
+                    deviceId: "HALIMA-INFINIX-005",
+                    deviceName: "Halima's Infinix",
+                    phoneNumber: "+255754321987",
+                    ownerName: "Halima Said",
+                    gender: "female",
+                    confidence: 0.98,
                     registeredAt: new Date().toISOString(),
                     lastSeen: new Date().toISOString()
                 }
@@ -236,21 +629,21 @@ function loadDevices() {
         }
     } catch (error) {
         console.error('Error loading devices:', error);
-        femaleDevices = [];
+        femaleDevicesDatabase = [];
     }
 }
 
 function saveDevices() {
     try {
-        fs.writeFileSync(DEVICES_DB_PATH, JSON.stringify(femaleDevices, null, 2));
+        fs.writeFileSync(DEVICES_DB_PATH, JSON.stringify(femaleDevicesDatabase, null, 2));
+        console.log('💾 Female contacts database saved');
     } catch (error) {
         console.error('Error saving devices:', error);
     }
 }
 
-function findOrAddFemale(deviceId, deviceName, phoneNumber = null) {
-    // Check if already in database
-    let female = femaleDevices.find(d => 
+function findOrDetectFemale(deviceId, deviceName, phoneNumber = null) {
+    let female = femaleDevicesDatabase.find(d => 
         d.deviceId.toLowerCase() === deviceId.toLowerCase()
     );
     
@@ -263,12 +656,12 @@ function findOrAddFemale(deviceId, deviceName, phoneNumber = null) {
         return female;
     }
     
-    // Try to detect by name
-    if (deviceName && deviceName !== 'Unknown' && deviceName !== 'undefined') {
-        const detection = detector.detectGender(deviceName);
+    if (deviceName && deviceName !== 'Unknown' && deviceName !== 'undefined' && deviceName !== 'null') {
+        const detection = genderDetector.detectGender(deviceName, phoneNumber, deviceId);
         
         if (detection.gender === 'female' && detection.confidence > 0.6) {
-            console.log(`🎯 Auto-detected female: ${deviceName} (${detection.method}, ${detection.confidence * 100}%)`);
+            console.log(`🎯 Auto-detected female: ${deviceName} (confidence: ${(detection.confidence * 100).toFixed(1)}%)`);
+            console.log(`   Methods used: ${detection.methods?.map(m => m.method).join(', ') || 'multiple'}`);
             
             const newFemale = {
                 deviceId: deviceId,
@@ -276,14 +669,14 @@ function findOrAddFemale(deviceId, deviceName, phoneNumber = null) {
                 phoneNumber: phoneNumber || 'PENDING',
                 ownerName: deviceName,
                 gender: 'female',
-                detectionMethod: detection.method,
                 confidence: detection.confidence,
+                detectionMethods: detection.methods,
                 autoDetected: true,
                 registeredAt: new Date().toISOString(),
                 lastSeen: new Date().toISOString()
             };
             
-            femaleDevices.push(newFemale);
+            femaleDevicesDatabase.push(newFemale);
             saveDevices();
             return newFemale;
         }
@@ -292,24 +685,48 @@ function findOrAddFemale(deviceId, deviceName, phoneNumber = null) {
     return null;
 }
 
-// ==================== API ROUTES ====================
+// ==================== COMMUNICATION FUNCTIONS ====================
+
+async function sendSMSToFemale(phoneNumber, ownerName, distance) {
+    const message = `Habari ${ownerName}! Kifaa chako kimegunduliwa umbali wa ${distance.toFixed(1)} mita.`;
+    console.log(`📱 [SMS DEMO] To: ${phoneNumber} | ${message}`);
+    
+    return { 
+        success: true, 
+        mock: true, 
+        message: `SMS would be sent to ${phoneNumber}`,
+        details: `Habari ${ownerName}, uko karibu ${distance.toFixed(1)}m`
+    };
+}
+
+async function callFemale(phoneNumber, ownerName, distance) {
+    console.log(`📞 [CALL DEMO] To: ${phoneNumber} | Calling ${ownerName}`);
+    return { 
+        success: true, 
+        mock: true, 
+        message: `Call would be initiated to ${phoneNumber}`,
+        details: `Calling ${ownerName}`
+    };
+}
+
+// ==================== EXPRESS ROUTES ====================
 
 app.get('/api/females', (req, res) => {
-    res.json({
-        success: true,
-        count: femaleDevices.length,
-        females: femaleDevices
+    res.json({ 
+        success: true, 
+        count: femaleDevicesDatabase.length,
+        females: femaleDevicesDatabase 
     });
 });
 
-app.post('/api/females', (req, res) => {
+app.post('/api/females', async (req, res) => {
     const { deviceId, deviceName, phoneNumber, ownerName } = req.body;
     
     if (!deviceId || !phoneNumber) {
-        return res.status(400).json({ error: 'deviceId and phoneNumber are required' });
+        return res.status(400).json({ error: 'deviceId and phoneNumber required' });
     }
     
-    const existing = femaleDevices.find(d => d.deviceId === deviceId);
+    const existing = femaleDevicesDatabase.find(d => d.deviceId === deviceId);
     
     if (existing) {
         existing.phoneNumber = phoneNumber;
@@ -317,7 +734,7 @@ app.post('/api/females', (req, res) => {
         existing.deviceName = deviceName || existing.deviceName;
         existing.lastSeen = new Date().toISOString();
         saveDevices();
-        res.json({ success: true, message: 'Updated', female: existing });
+        res.json({ success: true, message: 'Female contact updated', contact: existing });
     } else {
         const newFemale = {
             deviceId,
@@ -328,27 +745,27 @@ app.post('/api/females', (req, res) => {
             registeredAt: new Date().toISOString(),
             lastSeen: new Date().toISOString()
         };
-        femaleDevices.push(newFemale);
+        femaleDevicesDatabase.push(newFemale);
         saveDevices();
-        res.json({ success: true, message: 'Added', female: newFemale });
+        res.json({ success: true, message: 'Female contact added', contact: newFemale });
     }
 });
 
 app.delete('/api/females/:deviceId', (req, res) => {
     const { deviceId } = req.params;
-    const removed = femaleDevices.find(d => d.deviceId === deviceId);
-    femaleDevices = femaleDevices.filter(d => d.deviceId !== deviceId);
+    const removed = femaleDevicesDatabase.find(d => d.deviceId === deviceId);
+    femaleDevicesDatabase = femaleDevicesDatabase.filter(d => d.deviceId !== deviceId);
     saveDevices();
     res.json({ success: true, removed: removed || null });
 });
 
-app.get('/api/detect', (req, res) => {
+app.get('/api/detect-gender', (req, res) => {
     const { name } = req.query;
     if (!name) {
-        return res.status(400).json({ error: 'Name parameter required' });
+        return res.status(400).json({ error: 'Name required' });
     }
-    const result = detector.detectGender(name);
-    res.json(result);
+    const detection = genderDetector.detectGender(name);
+    res.json(detection);
 });
 
 app.post('/api/add-female-name', (req, res) => {
@@ -356,65 +773,99 @@ app.post('/api/add-female-name', (req, res) => {
     if (!name) {
         return res.status(400).json({ error: 'Name required' });
     }
-    detector.addFemaleName(name);
+    genderDetector.addFemaleName(name);
     res.json({ success: true, message: `Added "${name}" to female names` });
 });
 
+app.post('/api/add-male-name', (req, res) => {
+    const { name } = req.body;
+    if (!name) {
+        return res.status(400).json({ error: 'Name required' });
+    }
+    genderDetector.addMaleName(name);
+    res.json({ success: true, message: `Added "${name}" to male names` });
+});
+
 app.get('/api/stats', (req, res) => {
+    const detectorStats = genderDetector.getStats();
     res.json({
-        totalFemalesTracked: femaleDevices.length,
-        autoDetected: femaleDevices.filter(f => f.autoDetected).length,
-        femaleNamesInDB: detector.femaleNames.size,
-        maleNamesInDB: detector.maleNames.size,
-        pendingPhoneNumbers: femaleDevices.filter(f => f.phoneNumber === 'PENDING').length
+        totalFemalesTracked: femaleDevicesDatabase.length,
+        autoDetected: femaleDevicesDatabase.filter(f => f.autoDetected).length,
+        pendingPhoneNumbers: femaleDevicesDatabase.filter(f => f.phoneNumber === 'PENDING').length,
+        femaleNamesInDB: detectorStats.femaleNames,
+        maleNamesInDB: detectorStats.maleNames,
+        learningRecords: detectorStats.learningData,
+        cacheSize: detectorStats.cacheSize
     });
 });
 
 app.get('/health', (req, res) => {
-    res.json({
-        status: 'ok',
-        females_tracked: femaleDevices.length,
+    res.json({ 
+        status: 'ok', 
+        females_tracked: femaleDevicesDatabase.length,
         detector_ready: true,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString() 
     });
 });
 
-// ==================== WEBSOCKET ====================
+app.get('/api/names/female', (req, res) => {
+    res.json({ 
+        success: true, 
+        count: genderDetector.femaleNamesSet.size,
+        names: Array.from(genderDetector.femaleNamesSet).slice(0, 100)
+    });
+});
+
+app.get('/api/names/male', (req, res) => {
+    res.json({ 
+        success: true, 
+        count: genderDetector.maleNamesSet.size,
+        names: Array.from(genderDetector.maleNamesSet).slice(0, 100)
+    });
+});
+
+// ==================== WEBSOCKET FOR REAL-TIME TRACKING ====================
 
 io.on('connection', (socket) => {
-    console.log('🟢 Client connected:', socket.id);
+    console.log('🟢 Scanner connected:', socket.id);
     
     socket.on('device-detected', async (data) => {
         const { deviceId, deviceName, distance, rssi, phoneNumber } = data;
-        
         const dist = distance || 0;
-        console.log(`📡 Device: ${deviceName || deviceId}, Distance: ${dist.toFixed(2)}m, RSSI: ${rssi || 0}dBm`);
+        
+        console.log(`📡 Scanning: ${deviceName || deviceId} at ${dist.toFixed(2)}m, RSSI: ${rssi || 0}dBm`);
         
         if (dist <= 10) {
-            const female = findOrAddFemale(deviceId, deviceName, phoneNumber);
+            const femaleContact = findOrDetectFemale(deviceId, deviceName, phoneNumber);
             
-            if (female) {
-                console.log(`✅ FEMALE DETECTED: ${female.ownerName} at ${dist.toFixed(2)}m`);
+            if (femaleContact) {
+                console.log(`✅ FEMALE DETECTED: ${femaleContact.ownerName} at ${dist.toFixed(2)}m`);
                 
                 const detection = {
-                    deviceId: female.deviceId,
-                    deviceName: female.deviceName,
-                    phoneNumber: female.phoneNumber,
-                    ownerName: female.ownerName,
+                    deviceId: femaleContact.deviceId,
+                    deviceName: femaleContact.deviceName,
+                    phoneNumber: femaleContact.phoneNumber,
+                    ownerName: femaleContact.ownerName,
+                    gender: 'female',
                     distance: dist,
                     rssi: rssi,
-                    confidence: female.confidence || 1.0,
-                    timestamp: new Date().toISOString()
+                    confidence: femaleContact.confidence || 1.0,
+                    timestamp: new Date().toISOString(),
+                    within10Meters: true
                 };
                 
                 io.emit('female-detected', detection);
+                
+                if (femaleContact.phoneNumber && femaleContact.phoneNumber !== 'PENDING') {
+                    await sendSMSToFemale(femaleContact.phoneNumber, femaleContact.ownerName, dist);
+                }
             } else {
-                console.log(`⚠️ Not female: ${deviceName}`);
+                console.log(`⚠️ Not detected as female: ${deviceName}`);
                 io.emit('unknown-device', {
                     deviceId,
                     deviceName,
                     distance: dist,
-                    message: 'Device not identified as female'
+                    message: "Device not identified as female"
                 });
             }
         } else {
@@ -422,26 +873,18 @@ io.on('connection', (socket) => {
         }
     });
     
-    socket.on('send-sms', (data) => {
-        console.log(`📱 SMS to ${data.phoneNumber}: ${data.message}`);
-        io.emit('sms-result', { 
-            success: true, 
-            message: `SMS sent to ${data.phoneNumber}`,
-            mock: true 
-        });
+    socket.on('send-sms-to-female', async (data) => {
+        const result = await sendSMSToFemale(data.phoneNumber, data.ownerName, data.distance || 5);
+        socket.emit('sms-result', result);
     });
     
-    socket.on('make-call', (data) => {
-        console.log(`📞 Call to ${data.phoneNumber}`);
-        io.emit('call-result', { 
-            success: true, 
-            message: `Call initiated to ${data.phoneNumber}`,
-            mock: true 
-        });
+    socket.on('call-female', async (data) => {
+        const result = await callFemale(data.phoneNumber, data.ownerName, data.distance || 5);
+        socket.emit('call-result', result);
     });
     
     socket.on('disconnect', () => {
-        console.log('🔴 Client disconnected:', socket.id);
+        console.log('🔴 Scanner disconnected:', socket.id);
     });
 });
 
@@ -451,13 +894,16 @@ loadDevices();
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log('=' .repeat(50));
-    console.log(`🚀 FEMALE PHONE TRACKER RUNNING`);
-    console.log('=' .repeat(50));
+    console.log('='.repeat(60));
+    console.log('🚀 SUPER FEMALE PHONE TRACKER v2.0 RUNNING');
+    console.log('='.repeat(60));
     console.log(`📍 URL: http://0.0.0.0:${PORT}`);
-    console.log(`👩 Females tracked: ${femaleDevices.length}`);
-    console.log(`📚 Female names in DB: ${detector.femaleNames.size}`);
+    console.log(`👩 Females tracked: ${femaleDevicesDatabase.length}`);
+    console.log(`📚 Female names in DB: ${genderDetector.femaleNamesSet.size}`);
+    console.log(`📚 Male names in DB: ${genderDetector.maleNamesSet.size}`);
+    console.log(`🧠 Learning records: ${genderDetector.learningData.length}`);
     console.log(`✅ Health check: http://0.0.0.0:${PORT}/health`);
-    console.log(`🔍 Test gender: http://0.0.0.0:${PORT}/api/detect?name=Fatma`);
-    console.log('=' .repeat(50));
+    console.log(`🔍 Test gender: http://0.0.0.0:${PORT}/api/detect-gender?name=Fatma`);
+    console.log(`📊 Stats: http://0.0.0.0:${PORT}/api/stats`);
+    console.log('='.repeat(60));
 });
