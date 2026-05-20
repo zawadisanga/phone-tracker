@@ -27,3 +27,10 @@
     "npm": "9.x"
   }
 }
+
+{
+  "scripts": {
+    "start": "node server.js",
+    "heroku-postbuild": "echo 'Build completed'"
+  }
+}
