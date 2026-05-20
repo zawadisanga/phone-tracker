@@ -3,29 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Phone Tracker - Detect Within 10 Meters</title>
+    <title>Female Phone Tracker - 10 Meters</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <header>
-            <h1>📱 Phone Tracker 10M</h1>
-            <p>Gundua vifaa ndani ya mita 10 na uwasiliane na wanawake waliokaribu</p>
+            <h1>👩 Female Phone Tracker</h1>
+            <p>Gundua na ufuatilie namba za simu za wanawake ndani ya mita 10</p>
         </header>
 
-        <!-- Main Controls -->
         <div class="controls">
             <button id="startScanBtn" class="btn btn-primary">
-                <span class="icon">🔍</span> Anza Utafutaji
+                🔍 Anza Utafutaji
             </button>
             <button id="stopScanBtn" class="btn btn-secondary" disabled>
-                <span class="icon">⏹️</span> Simamisha
+                ⏹️ Simamisha
             </button>
         </div>
 
-        <!-- Status -->
         <div class="status-card">
             <div class="status-indicator">
                 <div class="indicator" id="scanStatus"></div>
@@ -34,56 +31,37 @@
             <div id="distanceInfo" class="distance-info"></div>
         </div>
 
-        <!-- Detected Devices -->
         <div class="section">
-            <h2>📡 Vifaa Vilivyogunduliwa</h2>
-            <div id="detectedDevices" class="devices-list">
-                <div class="empty-state">
-                    <span class="icon">📱</span>
-                    <p>Hakuna vifaa bado. Anza utafutaji...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Female Owners Detected -->
-        <div class="section">
-            <h2>👩 Wanawake Waliogunduliwa</h2>
+            <h2>👩 Wanawake Waliogunduliwa (Mita 10)</h2>
             <div id="femaleDevices" class="devices-list">
                 <div class="empty-state">
                     <span class="icon">👩</span>
-                    <p>Hakuna wanawake waliogunduliwa ndani ya mita 10</p>
+                    <p>Hakuna mwanamke aliye karibu (mita 10)</p>
                 </div>
             </div>
         </div>
 
-        <!-- Device Database Management -->
         <div class="section">
-            <h2>📚 Database ya Vifaa</h2>
-            <button id="showDbBtn" class="btn btn-outline">Orodha ya Vifaa</button>
+            <h2>📚 Database ya Wanawake</h2>
+            <button id="showDbBtn" class="btn btn-outline">Orodha ya Wanawake Waliojitolea</button>
             <div id="deviceDatabase" style="display: none;">
                 <div id="deviceList"></div>
                 <div class="add-device-form">
-                    <h3>➕ Ongeza Kifaa Kipya</h3>
-                    <input type="text" id="newDeviceId" placeholder="Device ID (MAC address)" class="input">
+                    <h3>➕ Ongeza Mwanamke Mpya</h3>
+                    <input type="text" id="newDeviceId" placeholder="Device ID (kwa mfano: FATMA-001)" class="input">
                     <input type="text" id="newDeviceName" placeholder="Jina la Kifaa" class="input">
                     <input type="tel" id="newPhoneNumber" placeholder="Namba ya Simu (+255...)" class="input">
-                    <input type="text" id="newOwnerName" placeholder="Jina la Mmiliki" class="input">
-                    <select id="newGender" class="input">
-                        <option value="female">Mwanamke</option>
-                        <option value="male">Mwanaume</option>
-                        <option value="other">Nyingine</option>
-                    </select>
-                    <button id="addDeviceBtn" class="btn btn-success">Ongeza Kifaa</button>
+                    <input type="text" id="newOwnerName" placeholder="Jina Kamili" class="input">
+                    <button id="addDeviceBtn" class="btn btn-success">Ongeza Mwanamke</button>
                 </div>
             </div>
         </div>
 
-        <!-- Communication Panel -->
         <div class="section">
-            <h2>💬 Wasiliana</h2>
+            <h2>💬 Wasiliana na Mwanamke Aliyegunduliwa</h2>
             <div class="comms-panel">
-                <input type="tel" id="commsPhone" placeholder="Namba ya simu" class="input">
-                <textarea id="commsMessage" placeholder="Ujumbe wako..." rows="3" class="input"></textarea>
+                <input type="tel" id="commsPhone" placeholder="Namba ya simu ya mwanamke" class="input">
+                <textarea id="commsMessage" placeholder="Ujumbe wako kwa mwanamke huyu..." rows="3" class="input"></textarea>
                 <div class="comms-buttons">
                     <button id="sendSmsBtn" class="btn btn-sms">📨 Tuma SMS</button>
                     <button id="makeCallBtn" class="btn btn-call">📞 Piga Simu</button>
