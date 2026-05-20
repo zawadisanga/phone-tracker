@@ -1,7 +1,7 @@
 [
   {
-    "deviceId": "sample-device-1",
-    "deviceName": "Fatma iPhone",
+    "deviceId": "FATMA-PHONE-001",
+    "deviceName": "Fatma's iPhone",
     "phoneNumber": "+255712345678",
     "ownerName": "Fatma Hassan",
     "gender": "female",
@@ -9,8 +9,8 @@
     "lastSeen": "2024-01-15T14:25:00.000Z"
   },
   {
-    "deviceId": "sample-device-2",
-    "deviceName": "Aisha Samsung",
+    "deviceId": "AISHA-SAMSUNG-002",
+    "deviceName": "Aisha's Samsung",
     "phoneNumber": "+255765432109",
     "ownerName": "Aisha Juma",
     "gender": "female",
@@ -18,8 +18,8 @@
     "lastSeen": "2024-01-15T14:20:00.000Z"
   },
   {
-    "deviceId": "AA:BB:CC:DD:EE:FF",
-    "deviceName": "Real Device MAC",
+    "deviceId": "MARIAM-HUAWEI-003",
+    "deviceName": "Mariam's Phone",
     "phoneNumber": "+255756789012",
     "ownerName": "Mariam Salim",
     "gender": "female",
