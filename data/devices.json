@@ -1,0 +1,28 @@
+[
+  {
+    "deviceId": "sample-device-1",
+    "deviceName": "Fatma iPhone",
+    "phoneNumber": "+255712345678",
+    "ownerName": "Fatma Hassan",
+    "gender": "female",
+    "registeredAt": "2024-01-15T10:30:00.000Z",
+    "lastSeen": "2024-01-15T14:25:00.000Z"
+  },
+  {
+    "deviceId": "sample-device-2",
+    "deviceName": "Aisha Samsung",
+    "phoneNumber": "+255765432109",
+    "ownerName": "Aisha Juma",
+    "gender": "female",
+    "registeredAt": "2024-01-15T10:35:00.000Z",
+    "lastSeen": "2024-01-15T14:20:00.000Z"
+  },
+  {
+    "deviceId": "AA:BB:CC:DD:EE:FF",
+    "deviceName": "Real Device MAC",
+    "phoneNumber": "+255756789012",
+    "ownerName": "Mariam Salim",
+    "gender": "female",
+    "registeredAt": "2024-01-16T09:00:00.000Z"
+  }
+]
